@@ -4,7 +4,7 @@ import 'dart:async';
 
 import 'package:another_flushbar/flushbar.dart';
 import 'package:elf_client/elf_client.dart';
-import 'package:elf_flutter/widgets/robot.dart';
+// import 'package:elf_flutter/widgets/robot.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,27 +14,38 @@ import 'package:the_responsive_builder/the_responsive_builder.dart';
 // import 'package:video_player/video_player.dart';
 
 import 'package:elf_flutter/shared/theme.dart';
-import 'package:elf_flutter/state/shellView.dart';
+// import 'package:elf_flutter/state/shellView.dart';
+
+
 
 class OnboardingScreen extends ConsumerStatefulWidget {
-  const OnboardingScreen({super.key});
+    final VoidCallback? onStart;
+  const OnboardingScreen({super.key, required this.onStart});
 
   @override
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
+
+
 }
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
+
+
+
+
   late PageController _pageController;
   int currentPage = 0;
   late Timer _autoScrollTimer;
   bool _isloading = false;
+  
+
 
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
-
+  
     _pageController.addListener(() {
       setState(() {
         currentPage = _pageController.page?.round() ?? 0;
@@ -69,8 +80,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget build(BuildContext context) {
     //  final textTheme = Theme.of(context).textTheme;
     final theme = Theme.of(context);
-    
-   
+
     final pages = [
       PageSlider(
         Title: ' Evolving Intelligence',
@@ -100,147 +110,139 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       ),
     ];
 
-    return Stack(
+    return Column(
       children: [
-        Column(
-          children: [
-            const Spacer(),
-
-            SizedBox(
-              // adjust as needed
-              height: 25.h,
-              child: Robot()
-               )
-                .animate()
-                .fadeIn(duration: 800.ms)
-                .scale(begin: const Offset(0.85, 0.85)),
-
-            SizedBox(height: 5.h),
-
-            /// TEXT
-            SizedBox(
-              height: 30.h,
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: pages.length,
-                itemBuilder: (context, idx) => PageSlider(
-                  Title: pages[idx].Title,
-                  Title2: pages[idx].Title2,
-                  Title3: pages[idx].Title3,
-                  Subtext: pages[idx].Subtext,
-                ),
-              ),
+        const Spacer(),
+    
+       SizedBox(
+      height: 50.h,
+      
+    ),
+    
+    
+    
+        /// TEXT
+        SizedBox(
+          height: 30.h,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: pages.length,
+            itemBuilder: (context, idx) => PageSlider(
+              Title: pages[idx].Title,
+              Title2: pages[idx].Title2,
+              Title3: pages[idx].Title3,
+              Subtext: pages[idx].Subtext,
             ),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                pages.length,
-                (index) => Container(
-                  margin: EdgeInsets.symmetric(horizontal: 0.5.w),
-                  width: currentPage == index ? 3.w : 2.w,
-                  height: 0.8.h,
-                  decoration: BoxDecoration(
-                    color: currentPage == index
-                        ? theme.cardColor
-                        : theme.canvasColor.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ).animate().fadeIn(),
-              ),
-            ),
-
-            const Spacer(),
-           AnimatedGoogleButton(
-  logo: _isloading
-      ? Indicator()
-      : Image.asset(
-          'assets/google_Logo.png',
-          width: 30,
+          ),
         ),
-  onTap: () async {
-    if (_isloading) return;
-
-    setState(() {
-      _isloading = true;
-    });
-
-    try {
-      print('Starting Google sign-in attempt...');
-
-      // final controller = ref.read(googleAuthControllerProvider);
-      // await controller.signIn();
-
-      print('controller.signIn() completed successfully');
-
-      // Optional: If your controller exposes the Google user / ID token,
-      // print it here. Example if you can access it:
-      // final googleUser = controller.currentUser; // or similar
-      // print('Google ID Token: ${googleUser?.idToken}');
-      // print('Google Access Token: ${googleUser?.accessToken}');
-
-      // await ref.read(authNotifierProvider.notifier).onSignInCompleted();
-
-      // ✅ SUCCESS FLUSHBAR
-      Flushbar(
-        message: 'Sign-In Successfully',
-        icon: const Icon(Icons.check, color: Colors.green),
-        duration: const Duration(seconds: 3),
-        flushbarPosition: FlushbarPosition.BOTTOM,
-        flushbarStyle: FlushbarStyle.FLOATING,
-        margin: const EdgeInsets.all(16),
-        borderRadius: BorderRadius.circular(12),
-      ).show(context);
-
-      await Future.delayed(const Duration(seconds: 3));
-
-      if (!mounted) return;
-
-      ref.read(shellViewProvider.notifier).state = ShellView.home;
-    } catch (e, stack) {
-      print('Google sign-in failed with error:');
-      print(e);
-      print('Stack trace:');
-      print(stack);
-
-      if (!mounted) return;
-      Flushbar(
-        title: 'Sign-in Failed',
-        message: e.toString(),
-        flushbarPosition: FlushbarPosition.BOTTOM,
-        flushbarStyle: FlushbarStyle.FLOATING,
-        margin: const EdgeInsets.all(16),
-        borderRadius: BorderRadius.circular(12),
-        icon: const Icon(Icons.error_outline, color: Colors.red),
-        duration: const Duration(seconds: 3),
-      ).show(context);
-    } finally {
-      if (mounted) {
+    
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            pages.length,
+            (index) => Container(
+              margin: EdgeInsets.symmetric(horizontal: 0.5.w),
+              width: currentPage == index ? 3.w : 2.w,
+              height: 0.8.h,
+              decoration: BoxDecoration(
+                color: currentPage == index
+                    ? theme.cardColor
+                    : theme.canvasColor.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ).animate().fadeIn(),
+          ),
+        ),
+    
+        const Spacer(),
+       AnimatedGoogleButton(
+      logo: _isloading
+          ? Indicator()
+          : Image.asset(
+      'assets/google_Logo.png',
+      width: 30,
+    ),
+      onTap: () async {
+        if (_isloading) return;
+    
         setState(() {
-          _isloading = false;
+          _isloading = true;
         });
-      }
-      print('Sign-in flow ended (loading = false)');
-    }
-  },
-),
-
-
-
-
-            const SizedBox(height: 14),
-
-            Text(
-              "By logging in you accept our privacy policy",
-              style: TextStyle(
-                fontSize: 11,
-                color: theme.secondaryHeaderColor.withOpacity(0.5),
-              ),
-            ).animate().fadeIn(delay: 1400.ms),
-
-            const SizedBox(height: 20),
-          ],
-        ),
+    
+        try {
+          print('Starting Google sign-in attempt...');
+    
+          // final controller = ref.read(googleAuthControllerProvider);
+          // await controller.signIn();
+    
+          print('controller.signIn() completed successfully');
+    
+          // Optional: If your controller exposes the Google user / ID token,
+          // print it here. Example if you can access it:
+          // final googleUser = controller.currentUser; // or similar
+          // print('Google ID Token: ${googleUser?.idToken}');
+          // print('Google Access Token: ${googleUser?.accessToken}');
+    
+          // await ref.read(authNotifierProvider.notifier).onSignInCompleted();
+    
+          // ✅ SUCCESS FLUSHBAR
+    //       Flushbar(
+    // message: 'Sign-In Successfully',
+    // icon: const Icon(Icons.check, color: Colors.green),
+    // duration: const Duration(seconds: 3),
+    // flushbarPosition: FlushbarPosition.BOTTOM,
+    // flushbarStyle: FlushbarStyle.FLOATING,
+    // margin: const EdgeInsets.all(16),
+    // borderRadius: BorderRadius.circular(12),
+    //       ).show(context);
+    
+          await Future.delayed(const Duration(seconds: 3));
+    
+          if (!mounted) return;
+    
+    widget.onStart?.call();
+        } catch (e, stack) {
+          print('Google sign-in failed with error:');
+          print(e);
+          print('Stack trace:');
+          print(stack);
+    
+          if (!mounted) return;
+          Flushbar(
+    title: 'Sign-in Failed',
+    message: e.toString(),
+    flushbarPosition: FlushbarPosition.BOTTOM,
+    flushbarStyle: FlushbarStyle.FLOATING,
+    margin: const EdgeInsets.all(16),
+    borderRadius: BorderRadius.circular(12),
+    icon: const Icon(Icons.error_outline, color: Colors.red),
+    duration: const Duration(seconds: 3),
+          ).show(context);
+        } finally {
+          if (mounted) {
+    setState(() {
+      _isloading = false;
+    });
+          }
+          print('Sign-in flow ended (loading = false)');
+        }
+      },
+    ),
+    
+    
+    
+    
+        const SizedBox(height: 14),
+    
+        Text(
+          "By logging in you accept our privacy policy",
+          style: TextStyle(
+            fontSize: 11,
+            color: theme.secondaryHeaderColor.withOpacity(0.5),
+          ),
+        ).animate().fadeIn(delay: 1400.ms),
+    
+        const SizedBox(height: 20),
       ],
     );
   }

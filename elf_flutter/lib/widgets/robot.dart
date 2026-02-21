@@ -1,34 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:model_viewer_plus/model_viewer_plus.dart';
+import 'package:o3d/o3d.dart';
 
-class Robot extends StatelessWidget {
+class Robot extends StatefulWidget {
   const Robot({super.key});
 
   @override
+  State<Robot> createState() => _RobotState();
+}
+
+class _RobotState extends State<Robot> {
+
+  O3DController controller = O3DController();
+  @override
   Widget build(BuildContext context) {
-    return  ModelViewer(
-       src: 'elf_flutter/assets/mechdrone.glb',
-
-      // ===== Visual Settings =====
-      alt: "ROBO AI",
-      ar: false,
-      autoRotate: true,
-      cameraControls: false,
-      backgroundColor: Colors.transparent,
-
-      // ===== Animation Settings =====
+    return O3D.asset(
+      src : 'assets/mechdrone.glb',
       autoPlay: true,
-      animationName: "Animation", // change if your animation has name
-      animationCrossfadeDuration: 500,
-
-      // ===== Camera =====
-      cameraOrbit: "0deg 75deg 2.5m",
-      minCameraOrbit: "auto auto 2m",
-      maxCameraOrbit: "auto auto 3m",
-
-      // ===== Interaction disabled for onboarding =====
+      cameraControls: true,
       disableZoom: true,
       disablePan: true,
+      disableTap: true,
+      controller: controller,
+      cameraOrbit: CameraOrbit(
+        180, 75,  0.6
+      ),
+      cameraTarget: CameraTarget(0, 0.3, 0),
+      
+        
     );
   }
 }
