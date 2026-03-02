@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
-import 'package:elf_flutter/screens/home.dart';
-import 'package:elf_flutter/shared/theme.dart';
+
 import 'package:flutter/material.dart';
-import 'package:the_responsive_builder/the_responsive_builder.dart';
 
 class PremiumFloatingChips extends StatefulWidget {
   const PremiumFloatingChips({super.key});
@@ -21,10 +19,10 @@ class _PremiumFloatingChipsState extends State<PremiumFloatingChips>
   late AnimationController _floatController;
 
   final List<List<String>> data = [
-    ["Explore Animal Behavior", "Analyze Growth", "Decomposition?", "Enzymes"],
-    ["Cell Structure", "DNA Replication", "Photosynthesis", "Genetics"],
-    ["Ecosystem", "Biodiversity", "Evolution", "Microorganisms"],
-    ["Protein Synthesis", "Climate Change", "Energy Flow", "Biomes"]
+    ["Can you help me debug this code?", "How do I prepare for a job interview?",
+     "What’s a good startup idea I can build?", "What’s the best tech stack to learn in 2026?"],
+    ["How do I stay consistent and productive?", "Can you help me write a professional email?",
+     "What’s the difference between frontend and backend development?", "What’s the best way to make money online?"],
   ];
 
   @override

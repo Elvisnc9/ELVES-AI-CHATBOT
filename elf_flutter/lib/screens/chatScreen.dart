@@ -1,6 +1,5 @@
 import 'package:drawerbehavior/drawerbehavior.dart';
 import 'package:elf_flutter/screens/elvesDrawer.dart';
-import 'package:elf_flutter/shared/theme.dart';
 import 'package:elf_flutter/state/chatState.dart';
 import 'package:elf_flutter/state/shellView.dart';
 import 'package:elf_flutter/widgets/ChatScreem/DrawerSearchBar.dart';
@@ -48,7 +47,9 @@ class _ChatViewState extends ConsumerState<ChatView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
+     final chatState = ref.watch(chatProvider);
+     final messages = chatState.messages;
+   
     return SafeArea(
       child: DrawerScaffold(
         controller: drawerController,
@@ -136,8 +137,7 @@ class _ChatViewState extends ConsumerState<ChatView> {
                     top: 60,
                     child: Consumer(
                       builder: (context, ref, _) {
-                        final chatState = ref.watch(chatProvider);
-                        final messages = chatState.messages;
+                       
                         final isLoading = chatState.isLoading;
       
                         // Auto-scroll whenever messages change
@@ -178,6 +178,8 @@ class _ChatViewState extends ConsumerState<ChatView> {
                   ),
       
                   /// Input field + send button
+                   
+               
                   Positioned(
                     bottom: 10,
                     left: 12,
@@ -235,22 +237,22 @@ class _ChatViewState extends ConsumerState<ChatView> {
                                       ),
                                     ),
                                   ),
-      
+                        
                                   SizedBox(width: 2.w),
-      
+                        
                                   /// SEND BUTTON
                                   GestureDetector(
                                     onTap: () async {
                                       final text = _textController.text.trim();
                                       if (text.isEmpty) return;
-      
+                        
                                       _textController.clear();
                                       _focusNode.requestFocus();
-      
+                        
                                       await ref
                                           .read(chatProvider.notifier)
                                           .sendMessage(text);
-      
+                        
                                       _scrollToBottom();
                                     },
                                     child: Container(
@@ -290,28 +292,98 @@ class _ChatViewState extends ConsumerState<ChatView> {
   }
 
   /// Chat bubble
-  Widget _chatBubble(ChatMessage message) {
-    final theme = Theme.of(context);
-    return Align(
-      alignment: message.isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        padding: const EdgeInsets.all(14),
-        constraints: BoxConstraints(maxWidth: 75.w),
-        decoration: BoxDecoration(
-          color: message.isMe ? theme.canvasColor : AppColors.primary,
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Text(
-          message.text,
-          style: textTheme.displayMedium?.copyWith(
-            color: message.isMe ? theme.hintColor : theme.canvasColor,
-            fontSize: 16.sp,
+Widget _chatBubble(ChatMessage message) {
+  final theme = Theme.of(context);
+  final isUser = message.role == MessageRole.user;
+  final isAssistant = message.role == MessageRole.assistant;
+
+  return Align(
+    alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+    child: Column(
+      crossAxisAlignment:
+          isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        /// 💬 BUBBLE
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 6),
+          padding: const EdgeInsets.all(14),
+          constraints:
+              BoxConstraints(maxWidth: isUser ? 75.w : 100.w),
+          decoration: BoxDecoration(
+            color: isUser ? theme.canvasColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Text(
+            message.text,
+            style: textTheme.displayMedium?.copyWith(
+              color: isUser
+                  ? theme.hintColor
+                  : theme.shadowColor,
+              fontSize: 16.sp,
+            ),
           ),
         ),
-      ),
-    );
-  }
+
+        /// ⚡ ACTION ROW (Assistant Only)
+        if (isAssistant) ...[
+          const SizedBox(height: 4),
+          _assistantActionRow(message),
+        ],
+        
+      ],
+    ),
+  )
+      .animate()
+      .fadeIn(duration: 200.ms)
+      .slideY(begin: 0.05, duration: 200.ms);
+}
+
+
+Widget _assistantActionRow(ChatMessage message) {
+  final theme = Theme.of(context);
+
+  return Padding(
+    padding: const EdgeInsets.only(left: 14), // aligns with bubble padding
+    child: StatefulBuilder(
+      builder: (context, setState) {
+        bool isHovered = false;
+    
+        return AnimatedOpacity(
+          duration: const Duration(milliseconds: 150),
+          opacity:  0.5,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _actionIcon(Icons.thumb_up_alt_outlined),
+              SizedBox(width: 16),
+              _actionIcon(Icons.thumb_down_alt_outlined),
+              SizedBox(width: 16),
+              _actionIcon(Icons.copy_outlined),
+              SizedBox(width: 16),
+              _actionIcon(Icons.refresh),
+              SizedBox(width: 16),
+              _actionIcon(Icons.share_outlined),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+}
+
+
+
+Widget _actionIcon(IconData icon) {
+  final theme = Theme.of(context);
+
+  return Icon(
+    icon,
+    size: 18,
+    color: theme.hintColor.withOpacity(0.8),
+  );
+}
+
+
 }
 
 class HeroButton extends StatelessWidget {

@@ -171,12 +171,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         });
     
         try {
-          print('Starting Google sign-in attempt...');
+       
     
           // final controller = ref.read(googleAuthControllerProvider);
           // await controller.signIn();
     
-          print('controller.signIn() completed successfully');
+        
     
           // Optional: If your controller exposes the Google user / ID token,
           // print it here. Example if you can access it:
@@ -207,18 +207,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           print(e);
           print('Stack trace:');
           print(stack);
-    
-          if (!mounted) return;
-          Flushbar(
-    title: 'Sign-in Failed',
-    message: e.toString(),
-    flushbarPosition: FlushbarPosition.BOTTOM,
-    flushbarStyle: FlushbarStyle.FLOATING,
-    margin: const EdgeInsets.all(16),
-    borderRadius: BorderRadius.circular(12),
-    icon: const Icon(Icons.error_outline, color: Colors.red),
-    duration: const Duration(seconds: 3),
-          ).show(context);
         } finally {
           if (mounted) {
     setState(() {

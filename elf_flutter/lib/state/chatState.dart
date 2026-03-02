@@ -29,6 +29,13 @@ class SessionManager extends AuthenticationKeyManager {
 
 // ==================== CHAT STATE MODEL ====================
 
+
+enum MessageRole {
+  user,
+  assistant,
+  system,
+}
+
 class ChatState {
   final List<ChatMessage> messages;
   final bool isLoading;
@@ -56,18 +63,29 @@ class ChatState {
 // ==================== CHAT MESSAGE MODEL ====================
 
 class ChatMessage {
+    final String id;
   final String text;
-  final bool isMe;
+  final MessageRole role;
   final DateTime timestamp;
 
+  // 🔥 Future interaction states
+  final bool? isLiked;        // null = not voted
+  final bool isCopied;
+  final bool isRegenerating;
+  final bool hasError;
+
+
   ChatMessage({
+    required this.id,
     required this.text,
-    required this.isMe,
+    required this.role,
     DateTime? timestamp,
+    this.isLiked,
+    this.isCopied = false,
+    this.isRegenerating = false,
+    this.hasError = false,
   }) : timestamp = timestamp ?? DateTime.now();
 
-  @override
-  String toString() => 'ChatMessage(isMe: $isMe, text: ${text.substring(0, text.length > 30 ? 30 : text.length)}...)';
 }
 
 // ==================== CHAT NOTIFIER ====================
@@ -83,9 +101,10 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
     // Add user message immediately
     final userMsg = ChatMessage(
-      text: userMessage.trim(),
-      isMe: true,
-    );
+  id: DateTime.now().millisecondsSinceEpoch.toString(),
+  text: userMessage.trim(),
+  role: MessageRole.user,
+);
     
     state = state.copyWith(
       messages: [userMsg, ...state.messages],
@@ -98,10 +117,12 @@ class ChatNotifier extends StateNotifier<ChatState> {
       final aiResponse = await client.chat.sendMessage(userMessage);
 
       // Add AI response
-      final aiMsg = ChatMessage(
-        text: aiResponse,
-        isMe: false,
-      );
+     final aiMsg = ChatMessage(
+  id: DateTime.now().millisecondsSinceEpoch.toString(),
+  text: aiResponse,
+  role: MessageRole.assistant,
+);
+
       
       state = state.copyWith(
         messages: [aiMsg, ...state.messages],
@@ -119,8 +140,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
       
       // Add error message to chat
       final errorMsg = ChatMessage(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
         text: 'Sorry, I encountered an error: $errorMessage',
-        isMe: false,
+        role: MessageRole.system
       );
       
       state = state.copyWith(

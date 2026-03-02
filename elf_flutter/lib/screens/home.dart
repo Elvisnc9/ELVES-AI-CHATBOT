@@ -78,124 +78,105 @@ class _HomeContentState extends ConsumerState<HomeContent> {
     ImageProvider avatar;
    
       avatar = const AssetImage('assets/google_Logo.png');
-    
+      final theme = Theme.of(context);
     return SafeArea(
-      child: Stack(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-    
-              SizedBox(height: 1.h),
-                
-              Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Text(
-                  'How May I help you \ntoday,  ADAMS?',
-                  style: textTheme.displayLarge?.copyWith(fontSize: 32.sp,),
-                ),
-              ).animate().fadeIn().slideX(begin: 0.3),
-
-                          
-
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                              child: ChatInputBar(
-                                controller: myController,
-                                focusNode: myFocusNode,
-                                ischatScreen: false,
-                                onSend: (text) async {
-                                  print(text);
-                                },
-                              ),
-                            ),
-
-                            SizedBox(height: 3.h ),
-              RowTitle(textTheme: textTheme, title: 'Recent Chats'),
-              SizedBox(height: 1.h ),
-               PremiumFloatingChips(),
-                SizedBox(height: 5.h),
-
-
-RowTitle(textTheme: textTheme, title: 'Features'),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  children: [
-                    Sectors(
-                      icon: Icons.chat,
-                      textColor: AppColors.dark,
-                      title: 'Chat\n With AI',
-                      Subtitle: 'Talk to your AI assistant and get instant answers, smart suggestions, and real-time support.',
-                      onPressed: () {
-                          ref.read(shellViewProvider.notifier).state = ShellView.chat;
-                      },
-                      height: 30.h,
-                      width: 47.w,
-                      color: Color(0xFFADFF2F),
-                      
-                      size: 35.sp,
-                    ).animate().fadeIn().slideX(begin: -0.3 ,delay: 200.ms ),
-                
-                    Padding(
-                      padding: const EdgeInsets.all(3.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          Sectors(
-                            icon: Icons.image,
-                            title: 'Create AI Images',
-                            Subtitle: 'Generate stunning images with AI',
-                            onPressed: () {},
-                            height: 15.h,
-                            width: 45.w,
-                             textColor: Colors.white,
-                            color: AppColors.primary,
-                            size: 16.sp,
-                          ).animate().fadeIn().slideY(begin: -0.3, delay: 200.ms),
-                          SizedBox(height: 1.h),
-                
-                          Sectors(
-                            icon: Icons.video_call_rounded,
-                            title: 'Create AI Videos',
-                            Subtitle: 'Generate stunning videos with AI',
-                            onPressed: () {},
-                            height: 15.h,
-                            width: 45.w,
-                            color: Color(0xFFF1DDCF),
-                            size: 16.sp,
-                          ).animate().fadeIn().slideY(begin: 0.3, delay: 200.ms),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-                
-                
-
-             
-            //   ListView.builder(
-            //     scrollDirection: Axis.vertical,
-            //     shrinkWrap: true,
-            //     physics: NeverScrollableScrollPhysics(),
-            //     itemCount: ChatList.length,
-            //     itemBuilder: (context, index) {
-            //       return RecentChats(model: ChatList[index]);
-            //     },
-                
-                
-            //   )
-
-          
-
-           
-             ],
-          ),
-
-
+      child: ListView(
         
-        ],
+        children: [
+          
+          SizedBox(height: 1.h),
+      
+          
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Text(
+              'How May I help you \ntoday,  ADAMS?',
+              style: textTheme.displayLarge?.copyWith(fontSize: 32.sp,),
+            ),
+          ).animate().fadeIn().slideX(begin: 0.3),
+      
+                
+      
+           SizedBox(height: 7.h ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                Sectors(
+                  icon: Icons.chat,
+                  textColor: AppColors.dark,
+                  title: 'Chat\n With AI',
+                  Subtitle: 'Talk to your AI assistant and get instant answers, smart suggestions, and real-time support.',
+                  onPressed: () {
+                      ref.read(shellViewProvider.notifier).state = ShellView.chat;
+                  },
+                  height: 30.h,
+                  width: 47.w,
+                  color: Color(0xFFADFF2F),
+                  
+                  size: 35.sp,
+                ).animate().fadeIn().slideX(begin: -0.3 ,delay: 200.ms ),
+            
+                Padding(
+                  padding: const EdgeInsets.all(3.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Sectors(
+                        icon: Icons.image,
+                        title: 'Create AI Images',
+                        Subtitle: 'Generate stunning images with AI',
+                        onPressed: () {},
+                        height: 15.h,
+                        width: 45.w,
+                         textColor: Colors.white,
+                        color: AppColors.primary,
+                        size: 16.sp,
+                      ).animate().fadeIn().slideY(begin: -0.3, delay: 200.ms),
+                      SizedBox(height: 1.h),
+            
+                      Sectors(
+                        icon: Icons.video_call_rounded,
+                        title: 'Create AI Videos',
+                        Subtitle: 'Generate stunning videos with AI',
+                        onPressed: () {},
+                        height: 15.h,
+                        width: 45.w,
+                        color: Color(0xFFF1DDCF),
+                        size: 16.sp,
+                      ).animate().fadeIn().slideY(begin: 0.3, delay: 200.ms),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+            
+      
+            SizedBox( height: 8.h,
+            ),
+      
+            PremiumFloatingChips(),
+      
+            
+      
+         
+        //   ListView.builder(
+        //     scrollDirection: Axis.vertical,
+        //     shrinkWrap: true,
+        //     physics: NeverScrollableScrollPhysics(),
+        //     itemCount: ChatList.length,
+        //     itemBuilder: (context, index) {
+        //       return RecentChats(model: ChatList[index]);
+        //     },
+            
+            
+        //   )
+      
+      
+      
+       
+         ],
       ),
     );
   }

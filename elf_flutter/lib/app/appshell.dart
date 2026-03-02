@@ -97,7 +97,7 @@ class AppShellState extends ConsumerState<AppShell>
       case ShellView.onboarding:
         return screenHeight * 0.009;
       case ShellView.home:
-        return screenHeight * 0.3;
+        return screenHeight * 0.05;
       case ShellView.chat:
         return screenHeight * 0.15;
       default:
@@ -112,7 +112,7 @@ class AppShellState extends ConsumerState<AppShell>
       case ShellView.onboarding:
         return OnboardingScreen(
           key: const ValueKey('onboarding'),
-          onStart: () => startTransition(ShellView.home),
+          onStart: () => startTransition(ShellView.chat),
         );
       case ShellView.home:
         return const HomeView(key: ValueKey('home'));

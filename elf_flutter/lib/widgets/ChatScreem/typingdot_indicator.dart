@@ -14,7 +14,7 @@ class BouncingTypingDots extends StatefulWidget {
   const BouncingTypingDots({
     super.key,
     this.dotColor = const Color(0xFF8A8A8A), // WhatsApp grey
-    this.dotSize = 10.0,
+    this.dotSize = 7.0,
     this.spacing = 4.0,
     this.duration = const Duration(milliseconds: 1550),
   });

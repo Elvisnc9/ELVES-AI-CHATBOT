@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -22,7 +21,7 @@ void main() async {
   ),
 );
 
-const String serverUrl = 'http://10.221.138.254:8080/';
+const String serverUrl = 'http://172.24.44.254:8080/';
  client  = Client(serverUrl) 
     ..connectivityMonitor = FlutterConnectivityMonitor();
  runApp(

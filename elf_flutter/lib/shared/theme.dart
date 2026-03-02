@@ -14,7 +14,7 @@ class AppTheme {
       cardColor: AppColors.light.withOpacity(0.7),
       hintColor: Colors.white,
       secondaryHeaderColor: AppColors.light,
-      
+      shadowColor: Colors.white,
       
       canvasColor: Colors.grey.shade900,
     
@@ -67,6 +67,7 @@ class AppTheme {
     hintColor: Colors.black,
     cardColor: AppColors.dark.withOpacity(0.9),
     canvasColor: Colors.white,
+    shadowColor: Colors.black,
       secondaryHeaderColor: AppColors.dark,
      textTheme: TextTheme(
     displayLarge: GoogleFonts.plusJakartaSans(
