@@ -67,6 +67,7 @@ class ChatMessage {
   final String text;
   final MessageRole role;
   final DateTime timestamp;
+  bool isTypingComplete;
 
   // 🔥 Future interaction states
   final bool? isLiked;        // null = not voted
@@ -81,6 +82,7 @@ class ChatMessage {
     required this.role,
     DateTime? timestamp,
     this.isLiked,
+    this.isTypingComplete = false,
     this.isCopied = false,
     this.isRegenerating = false,
     this.hasError = false,

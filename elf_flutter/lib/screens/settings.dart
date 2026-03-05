@@ -368,3 +368,26 @@ class NavigationTile extends StatelessWidget {
     );
   }
 }
+
+
+class HeroButton extends StatelessWidget {
+  const HeroButton({super.key, required this.onPressed, required this.child});
+  final VoidCallback onPressed;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        padding: EdgeInsets.all(1.h),
+        decoration: BoxDecoration(
+          color: theme.cardColor.withOpacity(0.2),
+          shape: BoxShape.circle,
+        ),
+        child: child,
+      ),
+    );
+  }
+}

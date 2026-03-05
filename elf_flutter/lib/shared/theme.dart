@@ -15,9 +15,16 @@ class AppTheme {
       hintColor: Colors.white,
       secondaryHeaderColor: AppColors.light,
       shadowColor: Colors.white,
-      
+      splashColor: Colors.white,
       canvasColor: Colors.grey.shade900,
-    
+    focusColor: Colors.white10,
+
+    iconButtonTheme: IconButtonThemeData(
+      style: ButtonStyle(
+        iconColor: WidgetStatePropertyAll(Colors.white),
+        iconSize: WidgetStatePropertyAll(30)
+      )
+    ),
     textTheme: TextTheme(
     displayLarge: GoogleFonts.plusJakartaSans(
       fontSize: 24.sp,
@@ -68,13 +75,24 @@ class AppTheme {
     cardColor: AppColors.dark.withOpacity(0.9),
     canvasColor: Colors.white,
     shadowColor: Colors.black,
+     splashColor: Colors.black,
+     focusColor: Colors.grey,
       secondaryHeaderColor: AppColors.dark,
+      buttonTheme: ButtonThemeData(),
+      iconButtonTheme: IconButtonThemeData(
+      style: ButtonStyle(
+        iconColor: WidgetStatePropertyAll(Colors.black),
+        iconSize: WidgetStatePropertyAll(30)
+      )
+    ),
      textTheme: TextTheme(
     displayLarge: GoogleFonts.plusJakartaSans(
       fontSize: 24.sp,
       height: 1.5,
       fontWeight: FontWeight.bold,
     ),
+
+    
      displayMedium: GoogleFonts.plusJakartaSans(
       fontSize: 16.sp,
       fontWeight: FontWeight.w600,

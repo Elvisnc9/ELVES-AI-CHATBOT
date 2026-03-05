@@ -43,6 +43,8 @@ dependencies:
   shared_preferences: 
   http: ^1.6.0
   o3d:
+  flutter_markdown:
+
 
 dev_dependencies:
   flutter_lints: '>=3.0.0 <7.0.0'

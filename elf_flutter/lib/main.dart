@@ -21,7 +21,7 @@ void main() async {
   ),
 );
 
-const String serverUrl = 'http://172.24.44.254:8080/';
+const String serverUrl = 'http://10.75.88.254:8080/';
  client  = Client(serverUrl) 
     ..connectivityMonitor = FlutterConnectivityMonitor();
  runApp(

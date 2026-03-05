@@ -85,7 +85,7 @@ class AppShellState extends ConsumerState<AppShell>
       return 0;
 
     case ShellView.chat:
-      return 20; // example position for chat
+      return 0; // example position for chat
 
     default:
       return 0;
@@ -99,7 +99,7 @@ class AppShellState extends ConsumerState<AppShell>
       case ShellView.home:
         return screenHeight * 0.05;
       case ShellView.chat:
-        return screenHeight * 0.15;
+        return screenHeight * 0.05;
       default:
         return 0.0;
     }
@@ -108,7 +108,7 @@ class AppShellState extends ConsumerState<AppShell>
   Widget _buildPage(ShellView view) {
     switch (view) {
       case ShellView.chat:
-        return const ChatView(key: ValueKey('chat'));
+        return const ChatScreen(key: ValueKey('chat'));
       case ShellView.onboarding:
         return OnboardingScreen(
           key: const ValueKey('onboarding'),

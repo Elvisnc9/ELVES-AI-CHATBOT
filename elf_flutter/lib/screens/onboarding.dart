@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:another_flushbar/flushbar.dart';
 import 'package:elf_client/elf_client.dart';
+import 'package:elf_flutter/state/shellView.dart';
 // import 'package:elf_flutter/widgets/robot.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -110,129 +111,153 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       ),
     ];
 
-    return Column(
-      children: [
-      
-    
-       SizedBox(
-      height: 55.h,
-      
-    ),
-    
-    
-    
-        /// TEXT
-        SizedBox(
-          height: 28.h,
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: pages.length,
-            itemBuilder: (context, idx) => PageSlider(
-              Title: pages[idx].Title,
-              Title2: pages[idx].Title2,
-              Title3: pages[idx].Title3,
-              Subtext: pages[idx].Subtext,
-            ),
+    return SafeArea(
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Align(
+                alignment: Alignment.topRight,
+                 child: GestureDetector(
+                  onTap: (){
+                    ref.read(shellViewProvider.notifier).state = ShellView.chat;
+                  },
+                   child: Image.asset(
+                        'assets/ghost.png',
+                        height: 30,
+                        width: 20,
+                        color: theme.splashColor,
+                      ).animate(onPlay: (controller) => controller.repeat(reverse: true))
+                   .moveY(begin: -5, end: 5, duration: 2.seconds),
+                 ),
+               ),
           ),
-        ),
-    
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          Column(
+            children: [
+             
           
-          children: List.generate(
-            pages.length,
-            (index) => Container(
-              margin: EdgeInsets.symmetric(horizontal: 0.5.w),
-              width: currentPage == index ? 3.w : 2.w,
-              height: 0.8.h,
-              decoration: BoxDecoration(
-                color: currentPage == index
-                    ? theme.cardColor
-                    : theme.canvasColor.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(10),
+             SizedBox(
+            height: 50.h,
+            
+          ),
+          
+          
+          
+              /// TEXT
+              SizedBox(
+                height: 28.h,
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: pages.length,
+                  itemBuilder: (context, idx) => PageSlider(
+                    Title: pages[idx].Title,
+                    Title2: pages[idx].Title2,
+                    Title3: pages[idx].Title3,
+                    Subtext: pages[idx].Subtext,
+                  ),
+                ),
               ),
-            ).animate().fadeIn(),
+          
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                
+                children: List.generate(
+                  pages.length,
+                  (index) => Container(
+                    margin: EdgeInsets.symmetric(horizontal: 0.5.w),
+                    width: currentPage == index ? 3.w : 2.w,
+                    height: 0.8.h,
+                    decoration: BoxDecoration(
+                      color: currentPage == index
+                          ? theme.cardColor
+                          : theme.canvasColor.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ).animate().fadeIn(),
+                ),
+              ),
+          
+              SizedBox(height: 2.h,),
+            AnimatedGoogleButton(
+            logo: _isloading
+                ? Indicator()
+                : Image.asset(
+            'assets/google_Logo.png',
+            width: 30,
           ),
-        ),
-    
-        SizedBox(height: 2.h,),
-      AnimatedGoogleButton(
-      logo: _isloading
-          ? Indicator()
-          : Image.asset(
-      'assets/google_Logo.png',
-      width: 30,
-    ),
-      onTap: () async {
-        if (_isloading) return;
-    
-        setState(() {
-          _isloading = true;
-        });
-    
-        try {
-       
-    
-          // final controller = ref.read(googleAuthControllerProvider);
-          // await controller.signIn();
-    
-        
-    
-          // Optional: If your controller exposes the Google user / ID token,
-          // print it here. Example if you can access it:
-          // final googleUser = controller.currentUser; // or similar
-          // print('Google ID Token: ${googleUser?.idToken}');
-          // print('Google Access Token: ${googleUser?.accessToken}');
-    
-          // await ref.read(authNotifierProvider.notifier).onSignInCompleted();
-    
-          // ✅ SUCCESS FLUSHBAR
-    //       Flushbar(
-    // message: 'Sign-In Successfully',
-    // icon: const Icon(Icons.check, color: Colors.green),
-    // duration: const Duration(seconds: 3),
-    // flushbarPosition: FlushbarPosition.BOTTOM,
-    // flushbarStyle: FlushbarStyle.FLOATING,
-    // margin: const EdgeInsets.all(16),
-    // borderRadius: BorderRadius.circular(12),
-    //       ).show(context);
-    
-          await Future.delayed(const Duration(seconds: 3));
-    
-          if (!mounted) return;
-    
-    widget.onStart?.call();
-        } catch (e, stack) {
-          print('Google sign-in failed with error:');
-          print(e);
-          print('Stack trace:');
-          print(stack);
-        } finally {
-          if (mounted) {
-    setState(() {
-      _isloading = false;
-    });
-          }
-          print('Sign-in flow ended (loading = false)');
-        }
-      },
-    ),
-    
-    
-    
-    
-        const SizedBox(height: 14),
-    
-        Text(
-          "By logging in you accept our privacy policy",
-          style: TextStyle(
-            fontSize: 11,
-            color: theme.secondaryHeaderColor.withOpacity(0.5),
+            onTap: () async {
+              if (_isloading) return;
+          
+              setState(() {
+                _isloading = true;
+              });
+          
+              try {
+             
+          
+                // final controller = ref.read(googleAuthControllerProvider);
+                // await controller.signIn();
+          
+              
+          
+                // Optional: If your controller exposes the Google user / ID token,
+                // print it here. Example if you can access it:
+                // final googleUser = controller.currentUser; // or similar
+                // print('Google ID Token: ${googleUser?.idToken}');
+                // print('Google Access Token: ${googleUser?.accessToken}');
+          
+                // await ref.read(authNotifierProvider.notifier).onSignInCompleted();
+          
+                // ✅ SUCCESS FLUSHBAR
+          //       Flushbar(
+          // message: 'Sign-In Successfully',
+          // icon: const Icon(Icons.check, color: Colors.green),
+          // duration: const Duration(seconds: 3),
+          // flushbarPosition: FlushbarPosition.BOTTOM,
+          // flushbarStyle: FlushbarStyle.FLOATING,
+          // margin: const EdgeInsets.all(16),
+          // borderRadius: BorderRadius.circular(12),
+          //       ).show(context);
+          
+                await Future.delayed(const Duration(seconds: 3));
+          
+                if (!mounted) return;
+          
+          // widget.onStart?.call();
+              } catch (e, stack) {
+                print('Google sign-in failed with error:');
+                print(e);
+                print('Stack trace:');
+                print(stack);
+              } finally {
+                if (mounted) {
+          setState(() {
+            _isloading = false;
+          });
+                }
+                print('Sign-in flow ended (loading = false)');
+              }
+            },
           ),
-        ).animate().fadeIn(delay: 1400.ms),
-    
-        const SizedBox(height: 20),
-      ],
+          
+          
+          
+          
+              const SizedBox(height: 14),
+          
+              Text(
+                "By logging in you accept our privacy policy",
+                style: TextStyle(
+                  fontSize: 11,
+                  color: theme.secondaryHeaderColor.withOpacity(0.5),
+                ),
+              ).animate().fadeIn(delay: 1400.ms),
+          
+              const SizedBox(height: 20),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

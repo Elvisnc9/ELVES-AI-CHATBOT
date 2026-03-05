@@ -87,13 +87,7 @@ class _HomeContentState extends ConsumerState<HomeContent> {
           SizedBox(height: 1.h),
       
           
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Text(
-              'How May I help you \ntoday,  ADAMS?',
-              style: textTheme.displayLarge?.copyWith(fontSize: 32.sp,),
-            ),
-          ).animate().fadeIn().slideX(begin: 0.3),
+         
       
                 
       

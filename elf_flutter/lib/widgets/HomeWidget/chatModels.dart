@@ -19,10 +19,10 @@ class _PremiumFloatingChipsState extends State<PremiumFloatingChips>
   late AnimationController _floatController;
 
   final List<List<String>> data = [
-    ["Can you help me debug this code?", "How do I prepare for a job interview?",
-     "What’s a good startup idea I can build?", "What’s the best tech stack to learn in 2026?"],
-    ["How do I stay consistent and productive?", "Can you help me write a professional email?",
-     "What’s the difference between frontend and backend development?", "What’s the best way to make money online?"],
+    ["Can you help me debug this code?", "Elon Networth",
+     "What’s a good startup?", "Technnologies"],
+    ["How do I Create a Startup", "Mathematics",
+     "frontend and backend development?", "Iran Bombing"],
   ];
 
   @override
