@@ -8,11 +8,11 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:the_responsive_builder/the_responsive_builder.dart';
 
-import 'package:elf_flutter/screens/elvesDrawer.dart';
+import 'package:elf_flutter/widgets/elvesDrawer.dart';
 import 'package:elf_flutter/state/chatState.dart';
 import 'package:elf_flutter/state/shellView.dart';
 import 'package:elf_flutter/widgets/ChatScreem/typingdot_indicator.dart';
-import 'package:elf_flutter/widgets/HomeWidget/chatModels.dart';
+import 'package:elf_flutter/widgets/ChatScreem/chatModels.dart';
 
 class ChatView extends ConsumerStatefulWidget {
   final DrawerScaffoldController drawerController;
@@ -37,7 +37,7 @@ class _ChatViewState extends ConsumerState<ChatView>
         _scrollController.animateTo(
           0,
           duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
+          curve: Curves.easeInBack,
         );
       }
     });
@@ -50,8 +50,6 @@ class _ChatViewState extends ConsumerState<ChatView>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-   
-    
 
     // Detect first message arrival (not typing)
     if (messages.length != _prevMessageCount) {

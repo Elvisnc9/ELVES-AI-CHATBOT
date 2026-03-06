@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:the_responsive_builder/the_responsive_builder.dart';
 
 import 'package:elf_flutter/widgets/HomeWidget/AI_sectorsWidget.dart';
-import 'package:elf_flutter/widgets/HomeWidget/chatModels.dart';
+import 'package:elf_flutter/widgets/ChatScreem/chatModels.dart';
 import 'package:elf_flutter/shared/theme.dart';
 import 'package:elf_flutter/state/auth_state.dart';
 import 'package:elf_flutter/state/shellView.dart';
