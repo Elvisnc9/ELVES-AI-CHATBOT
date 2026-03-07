@@ -59,7 +59,7 @@ class _BouncingTypingDotsState extends State<BouncingTypingDots>
           ),
         );
       }),
-    ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.3);
+    ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.4);
   }
 }
 

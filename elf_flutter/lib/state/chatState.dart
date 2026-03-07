@@ -1,4 +1,5 @@
 
+import 'package:elf_flutter/core/app_errors/error_mapper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elf_client/elf_client.dart';
@@ -46,21 +47,25 @@ class ChatState {
   final List<ChatMessage> messages;
   final bool isLoading;
   final String? error;
+  final bool isGenerating;
 
   const ChatState({
     this.messages = const [],
     this.isLoading = false,
     this.error,
+    this.isGenerating = false
   });
 
   ChatState copyWith({
     List<ChatMessage>? messages,
     bool? isLoading,
+    bool? isGenerating,
     String? error,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
       isLoading: isLoading ?? this.isLoading,
+      isGenerating : isGenerating ?? this.isGenerating,
       error: error,
     );
   }
@@ -75,6 +80,7 @@ class ChatMessage {
   final MessageType type;
   final DateTime timestamp;
   bool isTypingComplete;
+  final bool isError;
 
   // 🔥 Future interaction states
   final bool? isLiked;        // null = not voted
@@ -88,6 +94,7 @@ class ChatMessage {
     required this.text,
     required this.role,
     this.type = MessageType.normal,
+    this.isError = false,
     DateTime? timestamp,
     this.isLiked,
     this.isTypingComplete = false,
@@ -126,6 +133,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
     state = state.copyWith(
       messages: [typingMsg, userMsg, ...state.messages],
       isLoading: true,
+      isGenerating: true,
       error: null,
     );
 
@@ -149,30 +157,29 @@ final aiMsg = ChatMessage(
 state = state.copyWith(
   messages: [aiMsg, ...updatedMessages],
   isLoading: false,
+  isGenerating: false
+
 );
 
       
     } catch (e) {
       // Handle error
-      final errorMessage = e.toString().replaceAll('Exception: ', '');
-      
-      state = state.copyWith(
-        isLoading: false,
-        error: errorMessage,
-        
+final appError = mapError(e);
 
-      );
-      
-      // Add error message to chat
-      final errorMsg = ChatMessage(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-        text: 'Sorry, I encountered an error: $errorMessage',
-        role: MessageRole.system
-      );
-      
-      state = state.copyWith(
-        messages: [errorMsg, ...state.messages],
-      );
+  final updatedMessages = [...state.messages];
+  updatedMessages.removeWhere((m) => m.type == MessageType.typing);
+
+  final errorMsg = ChatMessage(
+    id: DateTime.now().millisecondsSinceEpoch.toString(),
+    text: appError.message,
+    role: MessageRole.assistant,
+    isError: true
+  );
+
+  state = state.copyWith(
+    messages: [errorMsg, ...updatedMessages],
+    isLoading: false,
+  );
     }
   }
 
@@ -185,6 +192,10 @@ state = state.copyWith(
   void clearError() {
     state = state.copyWith(error: null);
   }
+
+  void stopGeneration() {
+  state = state.copyWith(isLoading: false);
+}
 
   /// Get message count
   int get messageCount => state.messages.length;
@@ -200,3 +211,5 @@ final chatProvider = StateNotifierProvider<ChatNotifier, ChatState>((ref) {
   final client = ref.watch(clientProvider);
   return ChatNotifier(client);
 });
+
+

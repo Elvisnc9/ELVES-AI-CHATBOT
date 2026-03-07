@@ -1,6 +1,5 @@
 // chat_screen_v2.dart
 import 'dart:async';
-
 import 'package:drawerbehavior/drawerbehavior.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -31,148 +30,174 @@ class _ChatViewState extends ConsumerState<ChatView>
   // Track previous message count to detect first message
   int _prevMessageCount = 0;
 
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
-          0,
+          _scrollController.position.minScrollExtent,
           duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInBack,
+          curve: Curves.easeOut,
         );
       }
     });
   }
 
+  @override
+  void dispose() {
+    _textController.dispose();
+    _scrollController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
   TextTheme get textTheme => Theme.of(context).textTheme;
-   ChatState get chatState => ref.watch(chatProvider);
+  ChatState get chatState => ref.watch(chatProvider);
   List<ChatMessage> get messages => chatState.messages;
- bool get hasMessages => messages.isNotEmpty;
-   ThemeData get theme => Theme.of(context);
+  bool get hasMessages => messages.isNotEmpty;
+  ThemeData get theme => Theme.of(context);
   @override
   Widget build(BuildContext context) {
-  
-
     // Detect first message arrival (not typing)
     if (messages.length != _prevMessageCount) {
       _prevMessageCount = messages.length;
       if (hasMessages) _scrollToBottom();
     }
 
-    return SizedBox.expand(
-      child: Stack(
-        children: [
-          // ── LAYER 1: Chat List ──────────────────────────────────
-          Positioned.fill(
-            child: AnimatedOpacity(
-              opacity: hasMessages ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 400),
-              curve: Curves.easeOut,
-              child: IgnorePointer(
-                ignoring: !hasMessages,
-                child: ShaderMask(
-                  shaderCallback: (Rect bounds) {
-                    return const LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black,
-                        Colors.black,
-                        Colors.transparent,
-                      ],
-                      stops: [0.0, 0.3, 0.8, 1.0],
-                    ).createShader(bounds);
-                  },
-                  blendMode: BlendMode.dstIn,
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    reverse: true,
-                    padding: EdgeInsets.only(
-                      top: 70,
-                      bottom: 12.h,
-                      left: 12,
-                      right: 12,
-                    ),
-                    itemCount: messages.length,
-                    itemBuilder: (context, index) {
-                      final message = messages[index];
-                      return _chatBubble(message, key:ValueKey(message.id)
-                      
-                      );
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SizedBox.expand(
+        child: Stack(
+          children: [
+            // ── LAYER 1: Chat List ──────────────────────────────────
+            Positioned.fill(
+              child: AnimatedOpacity(
+                opacity: hasMessages ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeOut,
+                child: IgnorePointer(
+                  ignoring: !hasMessages,
+                  child: ShaderMask(
+                    shaderCallback: (Rect bounds) {
+                      return const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black,
+                          Colors.black,
+                          Colors.transparent,
+                        ],
+                        stops: [0.0, 0.3, 0.8, 1.0],
+                      ).createShader(bounds);
                     },
+                    blendMode: BlendMode.dstIn,
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      reverse: true,
+                      padding: EdgeInsets.only(
+                        top: 20.h,
+                        bottom: 35.h,
+                        left: 12,
+                        right: 12,
+                      ),
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        final message = messages[index];
+                        return _chatBubble(message, key: ValueKey(message.id));
+                      },
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
 
-          // ── LAYER 2: Welcome Content ────────────────────────────
-          Positioned.fill(
-            child: AnimatedOpacity(
-              opacity: hasMessages ? 0.0 : 1.0,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeIn,
-              child: IgnorePointer(
-                ignoring: hasMessages,
-                child: _buildWelcomeContent(theme),
+            // ── LAYER 2: Welcome Content ────────────────────────────
+            Positioned.fill(
+              child: AnimatedOpacity(
+                opacity: hasMessages ? 0.0 : 1.0,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeIn,
+                child: IgnorePointer(
+                  ignoring: hasMessages,
+                  child: _buildWelcomeContent(theme),
+                ),
               ),
             ),
-          ),
 
-          Positioned(
-            top: 3.h,
-            left: 0,
-            right: 0,
-            child: _buildMenuBar(theme),
-          ),
-          
-          Positioned(
-       bottom: 10,
-      left: 0,
-      right: 0,
-            child: _buildInputBar(theme, chatState.isLoading,  )),
+            Positioned(
+              top: 3.h,
+              left: 0,
+              right: 0,
+              child: _buildMenuBar(theme),
+            ),
 
+            Positioned(
+              bottom: 10,
+              left: 0,
+              right: 0,
+              child: _buildInputBar(
+                theme,
+                chatState.isLoading,
+              ),
+            ),
 
-
-          // ── LAYER 4: Loading dots ───────────────────────────────
-     
-        ],
+            // ── LAYER 4: Loading dots ───────────────────────────────
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildWelcomeContent(ThemeData theme) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // push up slightly from true center
-        SizedBox(
-          height: 25.h,
-        ),
         Padding(
           padding: const EdgeInsets.all(20.0),
           child: Text(
-            'How May I help you \ntoday,  Victor?',
+            'How can I help, Elvis?',
             style: textTheme.displayLarge?.copyWith(
               fontSize: 32.sp,
             ),
           ),
         ).animate().fadeIn().slideX(begin: 0.3),
-        
+
         PremiumFloatingChips(),
-        
+
         // space for chips + input below
       ],
     );
   }
 
+  Widget _buildInputBar(
+    ThemeData theme,
+    bool isLoading,
+  ) {final messages = ref.watch(chatProvider).messages;
+     bool isTyping = messages.any(
+  (m) => m.role == MessageRole.assistant && !m.isTypingComplete,
   
-
-  Widget _buildInputBar(ThemeData theme, bool isLoading,
-  ) {
-final messages = ref.watch(chatProvider).messages;
-
-
+);
+    
+    final bool showVoicechat = messages.isEmpty;
+    final isGenerating = chatState.isGenerating;
+      final bool canSend = !isGenerating && !isTyping;
+   
     return SizedBox(
       child: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -192,9 +217,7 @@ final messages = ref.watch(chatProvider).messages;
             ),
             SizedBox(width: 1.w),
             Expanded(
-              
               child: AnimatedSize(
-                
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOut,
                 child: Container(
@@ -206,65 +229,108 @@ final messages = ref.watch(chatProvider).messages;
                     color: theme.canvasColor,
                     borderRadius: BorderRadius.circular(40),
                   ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      /// TEXT INPUT
-                      Expanded(
-                        child: TextField(
-                          controller: _textController,
-                          focusNode: _focusNode,
-                          keyboardType: TextInputType.multiline,
-                          textInputAction: TextInputAction.newline,
-                          maxLines: null,
-                          minLines: 1,
-                          style: textTheme.labelMedium,
-                          decoration: InputDecoration(
-                            hintText: 'Ask Elves Anything...',
-                            hintStyle: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.bold,
-                              color: theme.cardColor,
+                  child: Center(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        /// TEXT INPUT
+                        Expanded(
+                          child: TextField(
+                            enabled: !isLoading,
+                            controller: _textController,
+                            focusNode: _focusNode,
+                            keyboardType: TextInputType.multiline,
+                            textInputAction: TextInputAction.newline,
+                            maxLines: null,
+                            minLines: 1,
+                            autofocus: true,
+                            style: textTheme.labelMedium,
+                            decoration: InputDecoration(
+                              hintText: 'Ask Elves Anything...',
+                              hintStyle: TextStyle(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.bold,
+                                color: theme.cardColor,
+                              ),
+                              border: InputBorder.none,
+                              isDense: true,
                             ),
-                            border: InputBorder.none,
-                            isDense: true,
                           ),
                         ),
-                      ),
-        
-                      SizedBox(width: 2.w),
-        
-                      /// SEND BUTTON
-                      GestureDetector(
-                        onTap: isLoading  
-                            ? null
-                            : () async {
-                                final text = _textController.text.trim();
-                                if (text.isEmpty) return;
-        
-                                _textController.clear();
-                                _focusNode.requestFocus();
-        
-                                await ref
-                                    .read(chatProvider.notifier)
-                                    .sendMessage(text);
-        
-                                _scrollToBottom();
-                              },
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: theme.dividerColor,
-                          ),
-                          child: Icon(
-                            isLoading ? Icons.square_outlined : Icons.send_outlined,
-                            size: 18,
-                            color: theme.scaffoldBackgroundColor,
-                          ),
-                        ).animate().scale(duration: 150.ms).fadeIn(),
-                      ),
-                    ],
+
+                        SizedBox(width: 2.w),
+
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 250),
+                          child: showVoicechat && !isLoading
+                              ? Container(
+                                  key: const ValueKey("voice"),
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: theme.dividerColor,
+                                  ),
+                                  child: Image.asset(
+                                    'assets/SoundWaves.png',
+                                    color: theme.scaffoldBackgroundColor,
+                                    width: 25,
+                                  ),
+                                )
+                              : const SizedBox.shrink(key: ValueKey("empty")),
+                        ),
+
+                        SizedBox(width: 2.w),
+
+                        /// SEND BUTTON
+                        ///
+                        ///
+                        ///
+                       AnimatedSwitcher(
+  duration: const Duration(milliseconds: 200),
+  transitionBuilder: (child, animation) =>
+      ScaleTransition(scale: animation, child: child),
+  child: GestureDetector(
+    key: ValueKey(!canSend),
+    onTap: () async {
+      if (!canSend) {
+        // STOP GENERATION
+        ref.read(chatProvider.notifier).stopGeneration();
+        return;
+      }
+
+      final text = _textController.text.trim();
+      if (text.isEmpty) return;
+
+      _textController.clear();
+      _focusNode.unfocus();
+
+      await ref.read(chatProvider.notifier).sendMessage(text);
+
+      _scrollToBottom();
+    },
+    child: Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: theme.dividerColor,
+      ),
+      child: 
+         !canSend ?  Icon(
+              Icons.stop,
+              size: 22,
+              color: theme.scaffoldBackgroundColor,
+            )
+          : Image.asset(
+              'assets/send.png',
+              width: 25,
+              color: theme.scaffoldBackgroundColor,
+            ),
+    ),
+  ),
+)
+                      ],
+                    ),
                   ),
                 ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.2),
               ),
@@ -281,7 +347,7 @@ final messages = ref.watch(chatProvider).messages;
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.menu_outlined, size:30),
+            icon: const Icon(Icons.menu_outlined, size: 30),
             onPressed: () {
               FocusManager.instance.primaryFocus?.unfocus();
               widget.drawerController
@@ -289,37 +355,39 @@ final messages = ref.watch(chatProvider).messages;
             },
           ),
 
+          Spacer(),
 
-            Spacer(),
-
-
-            if(hasMessages)...[IconButton(
-            
-            icon: const Icon(Icons.edit_note_outlined,),
-            onPressed: () {
-              FocusManager.instance.primaryFocus?.unfocus();
-              ref.read(chatProvider.notifier).clearChat();
+          if (hasMessages) ...[
+            GestureDetector(
+              child: Image.asset(
+                'assets/new_chat.png',
+                color: theme.shadowColor,
+                width: 35,
+              ),
+              onTap: () {
+                FocusManager.instance.primaryFocus?.unfocus();
+                ref.read(chatProvider.notifier).clearChat();
                 _scrollController.animateTo(
-      0,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-    );
-              
-             // use controller from parent
-            },
-          ),],
-                   
+                  0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                );
 
-           IconButton(
-            icon: const Icon(Icons.settings_outlined,),
+                // use controller from parent
+              },
+            ),
+          ],
+
+          IconButton(
+            icon: const Icon(
+              Icons.settings_outlined,
+            ),
             onPressed: () {
-              FocusManager.instance.primaryFocus?.unfocus();
-               ref.read(shellViewProvider.notifier).state = ShellView.settings;
-             // use controller from parent
+              ref.read(shellViewProvider.notifier).state = ShellView.settings;
+              // use controller from parent
             },
           ),
-
-        ]
+        ],
       ),
     );
   }
@@ -330,70 +398,74 @@ final messages = ref.watch(chatProvider).messages;
     final isAssistant = message.role == MessageRole.assistant;
     final bool istypingComplete = message.isTypingComplete;
 
-
-
- if (message.type == MessageType.typing) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: BouncingTypingDots(),
-      ),
-    );
-  }
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical:  isUser? 1.h : 0),
-      child: Align(
-        alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-        child: Column(
-          crossAxisAlignment: isUser
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
-          children: [
-            /// 💬 BUBBLE
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 6),
-              padding: const EdgeInsets.all(12),
-              constraints: BoxConstraints(maxWidth: isUser ? 75.w : 100.w),
-              decoration: BoxDecoration(
-                color: isUser ? theme.canvasColor : Colors.transparent,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child:isAssistant && !istypingComplete ?
-        TypingMarkdown(
-      text: message.text,
-      textTheme: textTheme,
-      onCompleted: () {
-        setState((){
-          message.isTypingComplete = true;
-        });
-       
-      },
-        )
-      :
-        MarkdownBody(
-      data: message.text,
-      styleSheet: MarkdownStyleSheet(
-        p: textTheme.displayMedium,
-        strong: textTheme.displayMedium?.copyWith(
-          fontWeight: FontWeight.bold,
+    if (message.type == MessageType.typing) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: BouncingTypingDots(),
         ),
-      ),
-        )
-      
-            ),
-            
-            
-        //  color: isUser ? theme.hintColor : theme.shadowColor,
-        //               fontSize: 15.sp,
-            /// ⚡ ACTION ROW (Assistant Only)
-            if (isAssistant && istypingComplete) ...[
-              const SizedBox(height: 3),
-              _assistantActionRow(message),
-            ],
-          ],
-        ),
-      ).animate().fadeIn(duration: 200.ms).slideY(begin: 0.05, duration: 200.ms),
+      );
+    }
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: isUser ? 1.h : 0),
+      child:
+          Align(
+                alignment: isUser
+                    ? Alignment.centerRight
+                    : Alignment.centerLeft,
+                child: Column(
+                  crossAxisAlignment: isUser
+                      ? CrossAxisAlignment.end
+                      : CrossAxisAlignment.start,
+                  children: [
+                    /// 💬 BUBBLE
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      padding: const EdgeInsets.all(12),
+                      constraints: BoxConstraints(
+                        maxWidth: isUser ? 75.w : 100.w,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isUser ? theme.canvasColor : Colors.transparent,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: isAssistant && !istypingComplete
+                          ? TypingMarkdown(
+                              text: message.text,
+                              textTheme: textTheme,
+                              onCompleted: () {
+                                setState(() {
+                                  message.isTypingComplete = true;
+                                });
+                              },
+                            )
+                          : MarkdownBody(
+                              data: message.text,
+                              styleSheet: MarkdownStyleSheet(
+                                p: textTheme.displayMedium,
+                                strong: textTheme.displayMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                    ),
+
+                    //  color: isUser ? theme.hintColor : theme.shadowColor,
+                    //               fontSize: 15.sp,
+                    /// ⚡ ACTION ROW (Assistant Only)
+                    if (isAssistant &&
+                        istypingComplete &&
+                        !message.isError) ...[
+                      const SizedBox(height: 3),
+                      _assistantActionRow(message),
+                    ],
+                  ],
+                ),
+              )
+              .animate()
+              .fadeIn(duration: 200.ms)
+              .slideY(begin: 0.05, duration: 200.ms),
     );
   }
 
@@ -438,9 +510,6 @@ final messages = ref.watch(chatProvider).messages;
   }
 }
 
-
-
-
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
 
@@ -469,9 +538,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           degree: 15,
           drawerWidth: 300,
           slide: true,
-          
+
           alignment: Alignment.topLeft,
-          
+
           footerView: DrawerFooter(),
           child: ElvesDrawer(),
         ),
@@ -483,10 +552,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 }
 
-
-
-
-
 class TypingMarkdown extends StatefulWidget {
   final String text;
   final Duration speed;
@@ -496,7 +561,7 @@ class TypingMarkdown extends StatefulWidget {
     super.key,
     required this.text,
     required this.textTheme,
-     this.onCompleted,
+    this.onCompleted,
     this.speed = const Duration(milliseconds: 5),
   });
 
@@ -534,6 +599,7 @@ class _TypingMarkdownState extends State<TypingMarkdown> {
     _timer?.cancel();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     return MarkdownBody(
