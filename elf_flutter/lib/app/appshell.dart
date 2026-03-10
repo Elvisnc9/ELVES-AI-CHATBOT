@@ -5,7 +5,7 @@ import 'package:elf_flutter/screens/chatScreen.dart';
 import 'package:elf_flutter/screens/home.dart';
 import 'package:elf_flutter/screens/onboarding.dart';
 import 'package:elf_flutter/screens/settings.dart';
-import 'package:elf_flutter/state/shellView.dart';
+import 'package:elf_flutter/provider/shellView.dart';
 
 class AppShell extends ConsumerStatefulWidget {
   final Widget robot;

@@ -56,4 +56,36 @@ class ChatEndpoint extends Endpoint {
       throw Exception('Failed to generate AI response. Please try again.');
     }
   }
+
+  Future<String> generateTitle(
+  Session session,
+  String userPrompt,
+  String aiResponse,
+) async {
+  try {
+    final apiKey = session.passwords['geminiApiKey'];
+
+    if (apiKey == null || apiKey.isEmpty) {
+      throw Exception('Gemini API key not configured');
+    }
+
+    final geminiService = GeminiService(apiKey: apiKey);
+
+    final title = await geminiService.generateTitle(
+      userPrompt,
+      aiResponse,
+    );
+
+    return title.trim();
+
+  } catch (e) {
+    session.log(
+      'Title generation failed: $e',
+      level: LogLevel.error,
+    );
+
+    return 'New Chat';
+  }
+}
+
 }

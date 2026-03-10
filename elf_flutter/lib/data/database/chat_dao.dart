@@ -3,9 +3,8 @@ import 'package:drift/drift.dart';
 import 'package:elf_flutter/data/table/conservations_table.dart';
 import 'package:elf_flutter/data/table/messages_table.dart';
 import 'chat_database.dart';
-
-
 part 'chat_dao.g.dart';
+
 
 @DriftAccessor(tables: [Conversations, Messages])
 class ChatDao extends DatabaseAccessor<ChatDatabase> with _$ChatDaoMixin {
@@ -18,7 +17,7 @@ class ChatDao extends DatabaseAccessor<ChatDatabase> with _$ChatDaoMixin {
     return into(messages).insert(message);
   }
 
-  Future<List<dynamic>> getMessages(String conversationId) {
+  Future<List<Message>> getMessages(String conversationId) {
     return (select(messages)
           ..where((tbl) => tbl.conversationId.equals(conversationId))
           ..orderBy([
@@ -27,7 +26,7 @@ class ChatDao extends DatabaseAccessor<ChatDatabase> with _$ChatDaoMixin {
         .get();
   }
   
-    Future<List<dynamic>> getLastMessages(
+    Future<List<Message>> getLastMessages(
       String conversationId,
       int limit,
       ) {
@@ -42,16 +41,30 @@ class ChatDao extends DatabaseAccessor<ChatDatabase> with _$ChatDaoMixin {
         .get();
   }
 
+Future<void> updateConversationTitle(
+  String conversationId,
+  String newTitle,
+) {
+  return (update(conversations)
+        ..where((tbl) => tbl.id.equals(conversationId)))
+      .write(
+    ConversationsCompanion(
+      title: Value(newTitle),
+    ),
+  );
+}
 
-  Future<List<dynamic>> getAllConversations() {
-    return (select(conversations)
-          ..orderBy([
-            (t) => OrderingTerm(
+
+  Stream<List<Conversation>> watchAllConversations() {
+  return (select(conversations)
+        ..orderBy([
+          (t) => OrderingTerm(
                 expression: t.createdAt,
-                mode: OrderingMode.desc)
-          ]))
-        .get();
-  }
+                mode: OrderingMode.desc,
+              )
+        ]))
+      .watch();
+}
 
 
   Future<void> deleteConversation(String id) async {

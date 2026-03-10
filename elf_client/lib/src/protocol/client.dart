@@ -32,6 +32,18 @@ class EndpointChat extends _i1.EndpointRef {
         'sendMessage',
         {'message': message},
       );
+
+  _i2.Future<String> generateTitle(
+    String userPrompt,
+    String aiResponse,
+  ) => caller.callServerEndpoint<String>(
+    'chat',
+    'generateTitle',
+    {
+      'userPrompt': userPrompt,
+      'aiResponse': aiResponse,
+    },
+  );
 }
 
 /// {@category Endpoint}

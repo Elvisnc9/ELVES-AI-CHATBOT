@@ -1,6 +1,6 @@
 import 'package:elf_flutter/screens/chatScreen.dart';
 import 'package:elf_flutter/shared/theme.dart';
-import 'package:elf_flutter/state/shellView.dart';
+import 'package:elf_flutter/provider/shellView.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

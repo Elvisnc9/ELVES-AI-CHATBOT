@@ -4,7 +4,7 @@ import 'dart:async';
 
 import 'package:another_flushbar/flushbar.dart';
 import 'package:elf_client/elf_client.dart';
-import 'package:elf_flutter/state/shellView.dart';
+import 'package:elf_flutter/provider/shellView.dart';
 // import 'package:elf_flutter/widgets/robot.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';

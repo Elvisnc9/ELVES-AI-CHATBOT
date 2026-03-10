@@ -140,4 +140,47 @@ class GeminiService {
       throw Exception('Failed to parse Gemini response: $e');
     }
   }
+
+  Future<String> generateTitle(String userPrompt, String aiResponse) async {
+  final prompt = '''
+Generate a very short chat title (max 4 words) summarizing this conversation.
+
+User: $userPrompt
+AI: $aiResponse
+
+Title:
+''';
+
+  final url = Uri.parse(
+    '$_baseUrl/models/$_model:generateContent?key=$apiKey'
+  );
+
+  final requestBody = {
+    'contents': [
+      {
+        'parts': [
+          {'text': prompt}
+        ]
+      }
+    ],
+    'generationConfig': {
+      'temperature': 0.3,
+      'maxOutputTokens': 20,
+    }
+  };
+
+  final response = await http.post(
+    url,
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode(requestBody),
+  );
+
+  if (response.statusCode == 200) {
+    final json = jsonDecode(response.body);
+    return _extractTextFromResponse(json);
+  } else {
+    throw Exception('Failed to generate title');
+  }
+}
+
 }

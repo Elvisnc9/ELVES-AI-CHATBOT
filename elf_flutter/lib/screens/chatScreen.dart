@@ -7,8 +7,8 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:the_responsive_builder/the_responsive_builder.dart';
 
-import 'package:elf_flutter/state/chatState.dart';
-import 'package:elf_flutter/state/shellView.dart';
+import 'package:elf_flutter/provider/chatState.dart';
+import 'package:elf_flutter/provider/shellView.dart';
 import 'package:elf_flutter/widgets/ChatScreem/chatModels.dart';
 import 'package:elf_flutter/widgets/ChatScreem/typingdot_indicator.dart';
 import 'package:elf_flutter/widgets/elvesDrawer.dart';

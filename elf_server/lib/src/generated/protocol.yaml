@@ -1,5 +1,6 @@
 chat:
   - sendMessage:
+  - generateTitle:
 googleIdp:
   - login:
 jwtRefresh:
