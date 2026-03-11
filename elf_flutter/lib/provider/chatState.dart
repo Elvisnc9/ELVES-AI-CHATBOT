@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:elf_flutter/data/database/chat_dao.dart';
 import 'package:elf_flutter/data/database/chat_database.dart';
 import 'package:elf_flutter/provider/chat_database.dart';
@@ -124,7 +123,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
       await chatDao.createConversation(
         ConversationsCompanion.insert(
           id: activeConversationId!,
-          title: "Thinking....",
+          title: "New Chat",
           createdAt: DateTime.now(),
         ),
       );
@@ -206,25 +205,33 @@ class ChatNotifier extends StateNotifier<ChatState> {
       /// GENERATE TITLE AFTER FIRST PROMPT
       /// GENERATE TITLE AFTER FIRST PROMPT
 if (userMessages.length == 1) {
-  try {
-    final title = await client.chat.generateTitle(
-      userMessages.first.content,
-      aiResponse,
-    );
+        try {
+          // 2-second spacing so this request doesn't land in the same
+          // per-minute window as the sendMessage call above.
+          // The server-side retry handles any remaining rate-limit bursts.
+          await Future<void>.delayed(const Duration(seconds: 2));
 
-    await chatDao.updateConversationTitle(
-      activeConversationId!,
-      title,
-    );
-  
-  } catch (_) {
-    /// fallback title
-    await chatDao.updateConversationTitle(
-      activeConversationId!,
-      "Thinking....",
-    );
-  }
-}
+          final title = await client.chat.generateTitle(
+            userMessages.first.content,
+            aiResponse,
+          );
+
+          await chatDao.updateConversationTitle(
+            activeConversationId!,
+            title,
+          );
+        } catch (_) {
+          await chatDao.updateConversationTitle(
+            activeConversationId!,
+            'New Chat',
+          );
+        }
+      }
+
+
+
+
+
 
     } catch (e) {
       final appError = mapError(e);
@@ -255,26 +262,33 @@ if (userMessages.length == 1) {
  
 
   Future<void> loadConversation(String conversationId) async {
-    final messages = await chatDao.getMessages(conversationId);
+  state = state.copyWith(isLoading: true);
 
-    final chatMessages = messages.map((m) {
-      return ChatMessage(
-        id: m.id,
-        text: m.content,
-        role: m.role == 'user'
-            ? MessageRole.user
-            : MessageRole.assistant,
-        timestamp: m.createdAt,
-        isTypingComplete: true,
-      );
-    }).toList();
+  /// artificial shimmer delay
+  await Future.delayed(const Duration(seconds: 1));
 
-    activeConversationId = conversationId;
+  final messages = await chatDao.getMessages(conversationId);
 
-    state = state.copyWith(
-      messages: chatMessages.reversed.toList(),
+  final chatMessages = messages.map((m) {
+    return ChatMessage(
+      id: m.id,
+      text: m.content,
+      role: m.role == 'user'
+          ? MessageRole.user
+          : MessageRole.assistant,
+      timestamp: m.createdAt,
+      isTypingComplete: true,
     );
-  }
+  }).toList();
+
+  activeConversationId = conversationId;
+
+  state = state.copyWith(
+    messages: chatMessages.reversed.toList(),
+    isLoading: false,
+  );
+}
+
 
   Stream<List<Conversation>> watchConversations() {
     return chatDao.watchAllConversations();
@@ -321,3 +335,4 @@ final conversationsProvider =
   final notifier = ref.watch(chatProvider.notifier);
   return notifier.watchConversations();
 });
+final chatLoadingProvider = StateProvider<bool>((ref) => false);

@@ -1,4 +1,3 @@
-import 'package:elf_flutter/screens/chatScreen.dart';
 import 'package:elf_flutter/shared/theme.dart';
 import 'package:elf_flutter/provider/shellView.dart';
 import 'package:flutter/material.dart';
@@ -46,12 +45,6 @@ class _SettingsContentState extends ConsumerState<Settings> {
           
       
           _buildProfileHeader(),
-      
-          SizedBox(height: 2.h),
-      
-          sectionHeader('Subscription'),
-          SizedBox(height: 1.h),
-          _subscriptionTile(),
       
           SizedBox(height: 2.h),
       

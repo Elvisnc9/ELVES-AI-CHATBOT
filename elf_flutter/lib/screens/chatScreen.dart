@@ -1,6 +1,8 @@
 // chat_screen_v2.dart
-import 'dart:async';
+
 import 'package:drawerbehavior/drawerbehavior.dart';
+import 'package:elf_flutter/widgets/ChatScreem/chatShimmer.dart';
+import 'package:elf_flutter/widgets/ChatScreem/typingMarkdownanimation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -106,20 +108,21 @@ class _ChatViewState extends ConsumerState<ChatView>
                       ).createShader(bounds);
                     },
                     blendMode: BlendMode.dstIn,
-                    child: ListView.builder(
+                    child: chatState.isLoading  ? chatShimmerList() :
+                     ListView.builder(
                       controller: _scrollController,
                       reverse: true,
                       padding: EdgeInsets.only(
                         top: 20.h,
-                        bottom: 35.h,
+                        bottom: 15.h,
                         left: 12,
                         right: 12,
                       ),
                       itemCount: messages.length,
                       itemBuilder: (context, index) {
                         final message = messages[index];
-                        return _chatBubble(message, key: ValueKey(message.id));
-                      },
+                        return  _chatBubble(message, key: ValueKey(message.id));
+                      }
                     ),
                   ),
                 ),
@@ -229,108 +232,107 @@ class _ChatViewState extends ConsumerState<ChatView>
                     color: theme.canvasColor,
                     borderRadius: BorderRadius.circular(40),
                   ),
-                  child: Center(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        /// TEXT INPUT
-                        Expanded(
-                          child: TextField(
-                            enabled: !isLoading,
-                            controller: _textController,
-                            focusNode: _focusNode,
-                            keyboardType: TextInputType.multiline,
-                            textInputAction: TextInputAction.newline,
-                            maxLines: null,
-                            minLines: 1,
-                            autofocus: true,
-                            style: textTheme.labelMedium,
-                            decoration: InputDecoration(
-                              hintText: 'Ask Elves Anything...',
-                              hintStyle: TextStyle(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.bold,
-                                color: theme.cardColor,
-                              ),
-                              border: InputBorder.none,
-                              isDense: true,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      /// TEXT INPUT
+                      Expanded(
+                        child: TextField(
+                          enabled: !isLoading,
+                          controller: _textController,
+                          focusNode: _focusNode,
+                          keyboardType: TextInputType.multiline,
+                          textInputAction: TextInputAction.newline,
+                          maxLines: null,
+                          
+                          minLines: 1,
+                          autofocus: true,
+                          style: textTheme.labelMedium,
+                          decoration: InputDecoration(
+                            hintText: 'Ask Robo Anything...',
+                            hintStyle: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.bold,
+                              color: theme.cardColor,
                             ),
+                            border: InputBorder.none,
+                            isDense: true,
                           ),
                         ),
-
-                        SizedBox(width: 2.w),
-
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 250),
-                          child: showVoicechat && !isLoading
-                              ? Container(
-                                  key: const ValueKey("voice"),
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: theme.dividerColor,
-                                  ),
-                                  child: Image.asset(
-                                    'assets/SoundWaves.png',
-                                    color: theme.scaffoldBackgroundColor,
-                                    width: 25,
-                                  ),
-                                )
-                              : const SizedBox.shrink(key: ValueKey("empty")),
+                      ),
+                  
+                      SizedBox(width: 2.w),
+                  
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        child: showVoicechat && !isLoading
+                            ? Container(
+                                key: const ValueKey("voice"),
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: theme.dividerColor,
+                                ),
+                                child: Image.asset(
+                                  'assets/SoundWaves.png',
+                                  color: theme.scaffoldBackgroundColor,
+                                  width: 25,
+                                ),
+                              )
+                            : const SizedBox.shrink(key: ValueKey("empty")),
+                      ),
+                  
+                      SizedBox(width: 2.w),
+                  
+                      /// SEND BUTTON
+                      ///
+                      ///
+                      ///
+                     AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    transitionBuilder: (child, animation) =>
+                        ScaleTransition(scale: animation, child: child),
+                    child: GestureDetector(
+                      key: ValueKey(!canSend),
+                      onTap: () async {
+                        if (!canSend) {
+                          // STOP GENERATION
+                          ref.read(chatProvider.notifier).stopGeneration();
+                          return;
+                        }
+                  
+                        final text = _textController.text.trim();
+                        if (text.isEmpty) return;
+                  
+                        _textController.clear();
+                        _focusNode.unfocus();
+                  
+                        await ref.read(chatProvider.notifier).sendMessage(text);
+                  
+                        _scrollToBottom();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: theme.dividerColor,
                         ),
-
-                        SizedBox(width: 2.w),
-
-                        /// SEND BUTTON
-                        ///
-                        ///
-                        ///
-                       AnimatedSwitcher(
-  duration: const Duration(milliseconds: 200),
-  transitionBuilder: (child, animation) =>
-      ScaleTransition(scale: animation, child: child),
-  child: GestureDetector(
-    key: ValueKey(!canSend),
-    onTap: () async {
-      if (!canSend) {
-        // STOP GENERATION
-        ref.read(chatProvider.notifier).stopGeneration();
-        return;
-      }
-
-      final text = _textController.text.trim();
-      if (text.isEmpty) return;
-
-      _textController.clear();
-      _focusNode.unfocus();
-
-      await ref.read(chatProvider.notifier).sendMessage(text);
-
-      _scrollToBottom();
-    },
-    child: Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: theme.dividerColor,
-      ),
-      child: 
-         !canSend ?  Icon(
-              Icons.stop,
-              size: 22,
-              color: theme.scaffoldBackgroundColor,
-            )
-          : Image.asset(
-              'assets/send.png',
-              width: 25,
-              color: theme.scaffoldBackgroundColor,
-            ),
-    ),
-  ),
-)
-                      ],
+                        child: 
+                           !canSend ?  Icon(
+                                Icons.stop,
+                                size: 22, 
+                                color: theme.scaffoldBackgroundColor,
+                              )
+                            : Image.asset(
+                                'assets/send.png',
+                                width: 25,
+                                color: theme.scaffoldBackgroundColor,
+                              ),
+                      ),
                     ),
+                  )
+                    ],
                   ),
                 ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.2),
               ),
@@ -464,6 +466,7 @@ class _ChatViewState extends ConsumerState<ChatView>
                 ),
               )
               .animate()
+              
               .fadeIn(duration: 200.ms)
               .slideY(begin: 0.05, duration: 200.ms),
     );
@@ -508,6 +511,12 @@ class _ChatViewState extends ConsumerState<ChatView>
       color: theme.hintColor,
     );
   }
+
+  
+
+
+
+
 }
 
 class ChatScreen extends ConsumerStatefulWidget {
@@ -552,64 +561,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 }
 
-class TypingMarkdown extends StatefulWidget {
-  final String text;
-  final Duration speed;
-  final TextTheme textTheme;
-  final VoidCallback? onCompleted;
-  const TypingMarkdown({
-    super.key,
-    required this.text,
-    required this.textTheme,
-    this.onCompleted,
-    this.speed = const Duration(milliseconds: 5),
-  });
 
-  @override
-  State<TypingMarkdown> createState() => _TypingMarkdownState();
-}
 
-class _TypingMarkdownState extends State<TypingMarkdown> {
-  String _displayText = '';
-  Timer? _timer;
-  int _currentIndex = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    _startTyping();
-  }
-
-  void _startTyping() {
-    _timer = Timer.periodic(widget.speed, (timer) {
-      if (_currentIndex < widget.text.length) {
-        setState(() {
-          _displayText += widget.text[_currentIndex];
-          _currentIndex++;
-        });
-      } else {
-        timer.cancel();
-        widget.onCompleted?.call();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MarkdownBody(
-      data: _displayText,
-      styleSheet: MarkdownStyleSheet(
-        p: widget.textTheme.displayMedium,
-        strong: widget.textTheme.displayMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-}

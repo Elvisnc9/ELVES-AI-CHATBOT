@@ -33,6 +33,10 @@ class EndpointChat extends _i1.EndpointRef {
         {'message': message},
       );
 
+  /// Generates a short (3–6 word) conversation title from the first exchange.
+  ///
+  /// Returns a fallback title string instead of throwing, so the Flutter app
+  /// always receives a usable value.
   _i2.Future<String> generateTitle(
     String userPrompt,
     String aiResponse,
