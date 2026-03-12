@@ -136,6 +136,13 @@ class AppTheme {
     
     ),
 
+    bodySmall: GoogleFonts.plusJakartaSans(
+      fontSize: 15.sp,
+      fontWeight: FontWeight.w500,
+     color: AppColors.light.withOpacity(0.95)
+    
+    ),
+
   )
     
   );

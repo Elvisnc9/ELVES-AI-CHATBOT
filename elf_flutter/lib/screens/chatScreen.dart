@@ -402,7 +402,7 @@ AnimatedSwitcher(
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () {
-              ref.read(shellViewProvider.notifier).state = ShellView.settings;
+              ref.read(shellViewProvider.notifier).state = ShellView.voicechat;
             },
           ),
         ],

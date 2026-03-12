@@ -276,6 +276,8 @@ if (userMessages.length == 1) {
       state = state.copyWith(
         messages: [errorMsg, ...updatedMessages],
         isLoading: false,
+        isGenerating: false,
+
       );
     }
   }
@@ -372,7 +374,7 @@ if (userMessages.length == 1) {
   }
 
   void stopGeneration() {
-    state = state.copyWith(isLoading: false);
+    state = state.copyWith(isLoading: false, isGenerating: false, isLoadingConversation: false);
   }
 
   int get messageCount => state.messages.length;

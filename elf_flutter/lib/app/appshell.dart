@@ -1,4 +1,5 @@
 // app_shell.dart
+import 'package:elf_flutter/screens/voicehat.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elf_flutter/screens/chatScreen.dart';
@@ -106,6 +107,8 @@ class AppShellState extends ConsumerState<AppShell>
           key: const ValueKey('onboarding'),
           onStart: () => startTransition(ShellView.chat),
         );
+        case ShellView.voicechat:
+        return VoiceChatOverlay(key: ValueKey('voiceChat'));
     
       case ShellView.settings:
         return const Settings(key: ValueKey('settings'));
