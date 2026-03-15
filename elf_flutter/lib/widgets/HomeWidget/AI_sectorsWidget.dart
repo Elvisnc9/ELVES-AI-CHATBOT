@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:the_responsive_builder/the_responsive_builder.dart';
 
 class Sectors extends StatelessWidget {
-   Sectors(
+   const Sectors(
     {
     super.key, 
     required this.icon, 

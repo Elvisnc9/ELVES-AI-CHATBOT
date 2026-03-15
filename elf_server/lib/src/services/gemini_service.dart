@@ -99,8 +99,6 @@ class GeminiService {
           );
         }
         final wait = _retryDelays[i];
-        print(
-            '[GeminiService] 429 rate limit — waiting ${wait}s before retry ${i + 2}…');
         await Future<void>.delayed(Duration(seconds: wait));
       }
     }

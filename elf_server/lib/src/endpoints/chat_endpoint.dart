@@ -47,8 +47,6 @@ class ChatEndpoint extends Endpoint {
   // ─────────────────────────────────────────────────────────────────────────
   // generateTitle
   // ─────────────────────────────────────────────────────────────────────────
-
-  /// Generates a short (3–6 word) conversation title from the first exchange.
   Future<String> generateTitle(
     Session session,
     String userPrompt,

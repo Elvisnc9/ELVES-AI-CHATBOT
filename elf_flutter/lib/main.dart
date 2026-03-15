@@ -20,8 +20,7 @@ void main() async {
     statusBarColor: Colors.transparent,
   ),
 );
-
-const String serverUrl = 'http://10.149.193.254:8080/';
+const String serverUrl = 'http://172.29.87.254:8080/';
  client  = Client(serverUrl) 
     ..connectivityMonitor = FlutterConnectivityMonitor();
  runApp(

@@ -200,6 +200,7 @@ class ConversationTile extends StatelessWidget {
           child: Text(
             convo.title,
             maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: texttheme.bodySmall?.copyWith(color: theme.hintColor, ),
           ),
         ),

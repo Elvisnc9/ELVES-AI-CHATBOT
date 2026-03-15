@@ -1,7 +1,7 @@
 class Message {
   final String id;
   final String conversationId;
-  final String role; // user or assistant
+  final String role; 
   final String content;
   final DateTime createdAt;
 

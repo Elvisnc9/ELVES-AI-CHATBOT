@@ -1,52 +1,32 @@
 // ignore_for_file: avoid_print, non_constant_identifier_names
 
 import 'dart:async';
-
-import 'package:another_flushbar/flushbar.dart';
-import 'package:elf_client/elf_client.dart';
 import 'package:elf_flutter/provider/shellView.dart';
-// import 'package:elf_flutter/widgets/robot.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
-// import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 import 'package:the_responsive_builder/the_responsive_builder.dart';
-// import 'package:video_player/video_player.dart';
 
 import 'package:elf_flutter/shared/theme.dart';
-// import 'package:elf_flutter/state/shellView.dart';
-
-
 
 class OnboardingScreen extends ConsumerStatefulWidget {
-    final VoidCallback? onStart;
+  final VoidCallback? onStart;
   const OnboardingScreen({super.key, required this.onStart});
 
   @override
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
-
-
 }
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
-
-
-
-
   late PageController _pageController;
   int currentPage = 0;
   late Timer _autoScrollTimer;
   bool _isloading = false;
-  
-
-
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
-  
     _pageController.addListener(() {
       setState(() {
         currentPage = _pageController.page?.round() ?? 0;
@@ -58,14 +38,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   void dispose() {
     _autoScrollTimer.cancel();
-    _pageController.dispose(); // Dispose video controller
+    _pageController.dispose();
     super.dispose();
   }
 
   void _startAutoScroll() {
     _autoScrollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (_pageController.hasClients) {
-        int nextPage = (currentPage + 1) % 4; // 4 is the number of pages
+        int nextPage = (currentPage + 1) % 4;
         _pageController.animateToPage(
           nextPage,
           duration: const Duration(milliseconds: 800),
@@ -75,256 +55,291 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     });
   }
 
-
-
   @override
   Widget build(BuildContext context) {
-    //  final textTheme = Theme.of(context).textTheme;
     final theme = Theme.of(context);
+    final screenHeight = MediaQuery.of(context).size.height;
 
     final pages = [
-      PageSlider(
-        Title: ' Evolving Intelligence',
-        Title2: 'Built Simply',
-        Title3: 'Powered AI',
-        Subtext:
-            'Fast, adaptive intelligence designed to\n work naturally for you.',
+      _PageData(
+        title: 'Evolving Intelligence',
+        title2: 'Built Simply',
+        title3: 'Powered AI',
+        subtext: 'Fast, adaptive intelligence designed to\n work naturally for you.',
       ),
-      PageSlider(
-        Title: 'Brain AI',
-        Title2: 'Get Answers',
-        Title3: 'Smart Support',
-        Subtext: 'Get intelligent help anytime you need it.',
+      _PageData(
+        title: 'Brain AI',
+        title2: 'Get Answers',
+        title3: 'Smart Support',
+        subtext: 'Get intelligent help anytime you need it.',
       ),
-      PageSlider(
-        Title: 'Work Smarter',
-        Title2: 'Less Effort',
-        Title3: 'Better Effort',
-        Subtext:
-            'Natural conversations\n powered by intelligent understanding.',
+      _PageData(
+        title: 'Work Smarter',
+        title2: 'Less Effort',
+        title3: 'Better Effort',
+        subtext: 'Natural conversations\n powered by intelligent understanding.',
       ),
-      PageSlider(
-        Title: 'Create Faster',
-        Title2: 'Think Bigger',
-        Title3: 'AI Powered',
-        Subtext: 'Let AI handle tasks\n while you focus on what matters.',
+      _PageData(
+        title: 'Create Faster',
+        title2: 'Think Bigger',
+        title3: 'AI Powered',
+        subtext: 'Let AI handle tasks\n while you focus on what matters.',
       ),
     ];
 
     return SafeArea(
-      child: Stack(
+      child: Column(
         children: [
+          // ── Ghost / skip button ─────────────────────────────
           Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Align(
-                alignment: Alignment.topRight,
-                 child: GestureDetector(
-                  onTap: (){
-                    ref.read(shellViewProvider.notifier).state = ShellView.chat;
-                  },
-                   child: Image.asset(
-                        'assets/ghost.png',
-                        height: 30,
-                        width: 20,
-                        color: theme.splashColor,
-                      ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-                   .moveY(begin: -5, end: 5, duration: 2.seconds),
-                 ),
-               ),
+              alignment: Alignment.topRight,
+              child: GestureDetector(
+                onTap: () {
+                  ref.read(shellViewProvider.notifier).state = ShellView.chat;
+                },
+                child: Image.asset(
+                  'assets/ghost.png',
+                  height: 30,
+                  width: 20,
+                  color: theme.splashColor,
+                )
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .moveY(begin: -5, end: 5, duration: 2.seconds),
+              ),
+            ),
           ),
-          Column(
-            children: [
-             
-          
-             SizedBox(
-            height: 50.h,
-            
+
+          // ── Space that mirrors where the robot ends in AppShell ─
+          // AppShell positions the robot at top: screenHeight * 0.009,
+          // scaled at 0.45 → effective height ≈ 500 * 0.45 = 225px.
+          // We leave that space so content starts below the robot.
+          SizedBox(height: screenHeight * 0.30),
+
+          // ── Page slides (text content) ──────────────────────
+          // Uses Flexible so it never overflows on short phones.
+          Flexible(
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: pages.length,
+              itemBuilder: (context, idx) => PageSlider(
+                data: pages[idx],
+                key: ValueKey(idx),
+              ),
+            ),
           ),
-          
-          
-          
-              /// TEXT
-              SizedBox(
-                height: 28.h,
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: pages.length,
-                  itemBuilder: (context, idx) => PageSlider(
-                    Title: pages[idx].Title,
-                    Title2: pages[idx].Title2,
-                    Title3: pages[idx].Title3,
-                    Subtext: pages[idx].Subtext,
-                  ),
+
+          const SizedBox(height: 12),
+
+          // ── Dot indicators ──────────────────────────────────
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              pages.length,
+              (index) => AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                margin: EdgeInsets.symmetric(horizontal: 0.5.w),
+                width: currentPage == index ? 3.w : 2.w,
+                height: 0.8.h,
+                decoration: BoxDecoration(
+                  color: currentPage == index
+                      ? theme.cardColor
+                      : theme.canvasColor.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-          
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                
-                children: List.generate(
-                  pages.length,
-                  (index) => Container(
-                    margin: EdgeInsets.symmetric(horizontal: 0.5.w),
-                    width: currentPage == index ? 3.w : 2.w,
-                    height: 0.8.h,
-                    decoration: BoxDecoration(
-                      color: currentPage == index
-                          ? theme.cardColor
-                          : theme.canvasColor.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ).animate().fadeIn(),
-                ),
-              ),
-          
-              SizedBox(height: 2.h,),
-            AnimatedGoogleButton(
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── Google Login Button ─────────────────────────────
+          AnimatedGoogleButton(
             logo: _isloading
-                ? Indicator()
-                : Image.asset(
-            'assets/google_Logo.png',
-            width: 30,
-          ),
+                ? const SizedBox(
+                    width: 30,
+                    height: 30,
+                    child: Indicator(),
+                  )
+                : Image.asset('assets/google_Logo.png', width: 30),
             onTap: () async {
               if (_isloading) return;
-          
-              setState(() {
-                _isloading = true;
-              });
-          
+              setState(() => _isloading = true);
               try {
-             
-          
-                // final controller = ref.read(googleAuthControllerProvider);
-                // await controller.signIn();
-          
-              
-          
-                // Optional: If your controller exposes the Google user / ID token,
-                // print it here. Example if you can access it:
-                // final googleUser = controller.currentUser; // or similar
-                // print('Google ID Token: ${googleUser?.idToken}');
-                // print('Google Access Token: ${googleUser?.accessToken}');
-          
-                // await ref.read(authNotifierProvider.notifier).onSignInCompleted();
-          
-                // ✅ SUCCESS FLUSHBAR
-          //       Flushbar(
-          // message: 'Sign-In Successfully',
-          // icon: const Icon(Icons.check, color: Colors.green),
-          // duration: const Duration(seconds: 3),
-          // flushbarPosition: FlushbarPosition.BOTTOM,
-          // flushbarStyle: FlushbarStyle.FLOATING,
-          // margin: const EdgeInsets.all(16),
-          // borderRadius: BorderRadius.circular(12),
-          //       ).show(context);
-          
                 await Future.delayed(const Duration(seconds: 3));
-          
                 if (!mounted) return;
-          
-          // widget.onStart?.call();
               } catch (e, stack) {
-                print('Google sign-in failed with error:');
-                print(e);
-                print('Stack trace:');
+                print('Google sign-in failed: $e');
                 print(stack);
               } finally {
-                if (mounted) {
-          setState(() {
-            _isloading = false;
-          });
-                }
-                print('Sign-in flow ended (loading = false)');
+                if (mounted) setState(() => _isloading = false);
               }
             },
           ),
-          
-          
-          
-          
-              const SizedBox(height: 14),
-          
-              Text(
-                "By logging in you accept our privacy policy",
-                style: TextStyle(
-                  fontSize: 11,
-                  color: theme.secondaryHeaderColor.withOpacity(0.5),
-                ),
-              ).animate().fadeIn(delay: 1400.ms),
-          
-              const SizedBox(height: 20),
-            ],
-          ),
+
+          const SizedBox(height: 14),
+
+          // ── Legal text ──────────────────────────────────────
+          Text(
+            "By logging in you accept our privacy policy",
+            style: TextStyle(
+              fontSize: 11,
+              color: theme.secondaryHeaderColor.withOpacity(0.5),
+            ),
+          ).animate().fadeIn(delay: 1400.ms),
+
+          const SizedBox(height: 20),
         ],
       ),
     );
   }
 }
 
-class PageSlider extends StatelessWidget {
-  const PageSlider({
-    super.key,
-    required this.Title,
-    required this.Title2,
-    required this.Title3,
-    required this.Subtext,
-  });
+// ─────────────────────────────────────────────
+//  DATA MODEL  (replaces unnamed positional args)
+// ─────────────────────────────────────────────
 
-  final String Title;
-  final String Title2;
-  final String Title3;
-  final String Subtext;
+class _PageData {
+  final String title;
+  final String title2;
+  final String title3;
+  final String subtext;
+
+  const _PageData({
+    required this.title,
+    required this.title2,
+    required this.title3,
+    required this.subtext,
+  });
+}
+
+// ─────────────────────────────────────────────
+//  PAGE SLIDER
+//  • Uses ClipRect + slideY per line instead of
+//    per-character Text widgets — ~10× fewer widgets,
+//    no frame drops on mid-range Android.
+// ─────────────────────────────────────────────
+
+class PageSlider extends StatelessWidget {
+  const PageSlider({super.key, required this.data});
+
+  final _PageData data;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final theme = Theme.of(context);
-    return Column(
-      children: [
-        AnimatedTextReveal(
-          text: Title,
-          size: 35.sp,
-          color: theme.secondaryHeaderColor,
-          weight: FontWeight.w800,
-        ),
-        GlowShader(
-          child: AnimatedTextReveal(
-            text: Title2,
-            delay: 300.ms,
-            size: 50.sp,
-            color: AppColors.accent,
-            weight: FontWeight.bold,
+
+    return Padding(
+      // Horizontal breathing room on all phones
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Line 1
+          _RevealLine(
+            text: data.title,
+            style: textTheme.displayLarge?.copyWith(
+              fontSize: 30.sp,
+              color: theme.secondaryHeaderColor,
+              fontWeight: FontWeight.w800,
+            ),
+            delay: Duration.zero,
           ),
-        ),
-        AnimatedTextReveal(
-          text: Title3,
-          delay: 500.ms,
-          size: 40.sp,
-          color: theme.secondaryHeaderColor,
-          weight: FontWeight.w800,
-        ),
-        const SizedBox(height: 5),
-        Text(Subtext,
-                textAlign: TextAlign.center,
-                style: textTheme.labelMedium?.copyWith(
-                    height: 1.7,
-                    fontWeight: FontWeight.w100,
-                    fontSize: 12.sp,
-                    color: theme.secondaryHeaderColor.withOpacity(0.5)))
-            .animate()
-            .fadeIn(delay: 1.seconds)
-            .slideY(begin: 0.4),
-      ],
+
+          // Line 2  (accent + shimmer)
+          GlowShader(
+            child: _RevealLine(
+              text: data.title2,
+              style: textTheme.displayLarge?.copyWith(
+                fontSize: 44.sp,
+                color: AppColors.accent,
+                fontWeight: FontWeight.bold,
+              ),
+              delay: 120.ms,
+            ),
+          ),
+
+          // Line 3
+          _RevealLine(
+            text: data.title3,
+            style: textTheme.displayLarge?.copyWith(
+              fontSize: 34.sp,
+              color: theme.secondaryHeaderColor,
+              fontWeight: FontWeight.w800,
+            ),
+            delay: 240.ms,
+          ),
+
+          const SizedBox(height: 8),
+
+          // Sub-text
+          Text(
+            data.subtext,
+            textAlign: TextAlign.center,
+            style: textTheme.labelMedium?.copyWith(
+              height: 1.7,
+              fontWeight: FontWeight.w300,
+              fontSize: 11.sp,
+              color: theme.secondaryHeaderColor.withOpacity(0.5),
+            ),
+          )
+              .animate()
+              .fadeIn(delay: 400.ms)
+              .slideY(begin: 0.3, duration: 350.ms),
+        ],
+      ),
     );
   }
 }
 
+// ─────────────────────────────────────────────
+//  REVEAL LINE  (replaces AnimatedTextReveal)
+//  One widget per line, not one per character.
+// ─────────────────────────────────────────────
+
+class _RevealLine extends StatelessWidget {
+  final String text;
+  final TextStyle? style;
+  final Duration delay;
+
+  const _RevealLine({
+    required this.text,
+    required this.style,
+    required this.delay,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: Text(text, style: style, textAlign: TextAlign.center)
+          .animate()
+          .slideY(
+            begin: 0.8,
+            end: 0,
+            delay: delay,
+            duration: 380.ms,
+            curve: Curves.easeOutCubic,
+          )
+          .fadeIn(delay: delay, duration: 300.ms),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+//  GOOGLE BUTTON  (unchanged, kept identical)
+// ─────────────────────────────────────────────
+
 class AnimatedGoogleButton extends StatelessWidget {
   final VoidCallback onTap;
   final Widget logo;
-  const AnimatedGoogleButton(
-      {super.key, required this.onTap, required this.logo});
+  const AnimatedGoogleButton({
+    super.key,
+    required this.onTap,
+    required this.logo,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -365,45 +380,9 @@ class AnimatedGoogleButton extends StatelessWidget {
   }
 }
 
-class AnimatedTextReveal extends StatelessWidget {
-  final String text;
-  final Duration delay;
-  final double size;
-  final Color color;
-  final FontWeight weight;
-
-  const AnimatedTextReveal(
-      {super.key,
-      required this.text,
-      this.delay = Duration.zero,
-      required this.size,
-      required this.color,
-      required this.weight});
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return Wrap(
-      alignment: WrapAlignment.center,
-      children: List.generate(
-        text.length,
-        (index) => Text(
-          text[index],
-          style: textTheme.displayLarge?.copyWith(
-              fontSize: size, color: color, height: 1.3, fontWeight: weight),
-        )
-            .animate()
-            .fadeIn(
-              delay: delay + (100.ms * index),
-              duration: 300.ms,
-            )
-            .slideX(begin: 0.9),
-      ),
-    );
-  }
-}
-
-
+// ─────────────────────────────────────────────
+//  GLOW SHADER  (unchanged)
+// ─────────────────────────────────────────────
 
 class GlowShader extends StatelessWidget {
   final Widget child;
@@ -413,29 +392,29 @@ class GlowShader extends StatelessWidget {
   const GlowShader({
     super.key,
     required this.child,
-    this.colors = const [
-      Color(0xFF8E2DE2),
-      Color(0xFF4A00E0),
-    ],
+    this.colors = const [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
     this.duration = const Duration(seconds: 4),
   });
 
   @override
   Widget build(BuildContext context) {
     return ShaderMask(
-      shaderCallback: (bounds) {
-        return LinearGradient(
-          colors: colors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ).createShader(bounds);
-      },
+      shaderCallback: (bounds) => LinearGradient(
+        colors: colors,
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ).createShader(bounds),
       blendMode: BlendMode.srcATop,
-      child:
-          child.animate(onPlay: (c) => c.repeat()).shimmer(duration: duration),
+      child: child
+          .animate(onPlay: (c) => c.repeat())
+          .shimmer(duration: duration),
     );
   }
 }
+
+// ─────────────────────────────────────────────
+//  INDICATOR  (unchanged)
+// ─────────────────────────────────────────────
 
 class Indicator extends StatelessWidget {
   const Indicator({super.key});
@@ -448,4 +427,3 @@ class Indicator extends StatelessWidget {
     );
   }
 }
-

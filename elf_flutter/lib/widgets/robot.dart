@@ -14,21 +14,21 @@ class _RobotState extends State<Robot> {
 
   @override
   Widget build(BuildContext context) {
-    // return O3D.asset(
-    //   src : 'assets/mech_drone.glb',
-    //   autoPlay: true,
-    //   cameraControls: false,      
-    //   disableZoom: true,
-    //   disablePan: true,
-    //   disableTap: true,
-    //   controller: controller,
-    //   cameraOrbit: CameraOrbit(
-    //     180, 85,  0.2
-    //   ),
-    //   cameraTarget: CameraTarget(0, 0.3, 0),
-    // );
+    return O3D.asset(
+      src : 'assets/mech_drone.glb',
+      autoPlay: true,
+      cameraControls: false,      
+      disableZoom: true,
+      disablePan: true,
+      disableTap: true,
+      controller: controller,
+      cameraOrbit: CameraOrbit(
+        180, 85,  0.2
+      ),
+      cameraTarget: CameraTarget(0, 0.3, 0),
+    );
   
 
-  return CircularProgressIndicator();
+ 
   }
 }
