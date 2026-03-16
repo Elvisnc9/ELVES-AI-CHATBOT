@@ -9,7 +9,10 @@ class AppTheme {
     return ThemeData(
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.dark,
-
+     progressIndicatorTheme: ProgressIndicatorThemeData(
+      color: Colors.white,
+      strokeWidth: 3
+     ),
       primaryColor: Colors.white12,
       cardColor: AppColors.light.withOpacity(0.7),
       dividerColor: Colors.white,
@@ -79,6 +82,10 @@ class AppTheme {
     brightness: Brightness.light,
     scaffoldBackgroundColor: Colors.white,
     primaryColor: Colors.white,
+     progressIndicatorTheme: ProgressIndicatorThemeData(
+      color: Colors.black,
+      strokeWidth: 3
+     ),
     hintColor: Colors.black,
     dividerColor: Colors.black,
     cardColor: AppColors.dark.withOpacity(0.9),
@@ -143,7 +150,8 @@ class AppTheme {
     
     ),
 
-  )
+  ),
+
     
   );
 

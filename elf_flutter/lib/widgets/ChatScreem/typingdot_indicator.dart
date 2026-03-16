@@ -1,41 +1,37 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-
 import 'package:flutter_animate/flutter_animate.dart';
 
-/// 🔥 PURE BOUNCING DOTS ONLY (No bubble, No scaling)
-/// Exactly what you asked for — just three dots bouncing freely
-/// Super smooth, staggered, natural WhatsApp-style bounce
+/// 🔵 SINGLE SCALING DOT
+/// Smooth breathing / thinking animation
 
-class BouncingTypingDots extends StatefulWidget {
-  final Color dotColor;
+class ScalingTypingDot extends StatefulWidget {
+ 
   final double dotSize;
-  final double spacing;
   final Duration duration;
 
-  const BouncingTypingDots({
+  const ScalingTypingDot({
     super.key,
-    this.dotColor = const Color(0xFF8A8A8A), // WhatsApp grey
-    this.dotSize = 7.0,
-    this.spacing = 4.0,
-    this.duration = const Duration(milliseconds: 1550),
+    this.dotSize = 20,
+    this.duration = const Duration(milliseconds: 1200),
   });
 
   @override
-  State<BouncingTypingDots> createState() => _BouncingTypingDotsState();
+  State<ScalingTypingDot> createState() => _ScalingTypingDotState();
 }
 
-class _BouncingTypingDotsState extends State<BouncingTypingDots>
+class _ScalingTypingDotState extends State<ScalingTypingDot>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
+
     _controller = AnimationController(
       vsync: this,
       duration: widget.duration,
-    )..repeat(); // Infinite smooth loop
+    )..repeat();
   }
 
   @override
@@ -46,60 +42,27 @@ class _BouncingTypingDotsState extends State<BouncingTypingDots>
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(3, (index) {
-        return Padding(
-          padding: EdgeInsets.only(right: index < 2 ? widget.spacing : 0),
-          child: _BouncingDot(
-            controller: _controller,
-            delay: index * 0.40,        // Perfect natural stagger
-            color: widget.dotColor,
-            size: widget.dotSize,
-          ),
-        );
-      }),
-    ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.4);
-  }
-}
-
-class _BouncingDot extends StatelessWidget {
-  final AnimationController controller;
-  final double delay;
-  final Color color;
-  final double size;
-
-  const _BouncingDot({
-    required this.controller,
-    required this.delay,
-    required this.color,
-    required this.size,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AnimatedBuilder(
-      animation: controller,
+      animation: _controller,
       builder: (context, child) {
-        // Clean sine wave bounce with natural easing
-        final phase = (controller.value + delay) % 1.0;
-        final bounce = (math.sin(phase * math.pi * 3.9) + 1) / 2;
+        final scale = 0.7 + (math.sin(_controller.value * math.pi * 2) + 1) / 4;
 
-        // Pure vertical bounce — no scaling at all
-        final yOffset = -8.0 * Curves.easeOutCubic.transform(bounce);
-
-        return Transform.translate(
-          offset: Offset(0, yOffset),
+        return Transform.scale(
+          scale: scale,
           child: Container(
-            width: size,
-            height: size,
+            width: widget.dotSize,
+            height: widget.dotSize,
             decoration: BoxDecoration(
-              color: color,
+              color: theme.hintColor,
               shape: BoxShape.circle,
             ),
           ),
         );
       },
-    );
+    )
+        .animate()
+        .fadeIn(duration: 400.ms)
+        .scaleXY(begin: 0.8, end: 1);
   }
 }

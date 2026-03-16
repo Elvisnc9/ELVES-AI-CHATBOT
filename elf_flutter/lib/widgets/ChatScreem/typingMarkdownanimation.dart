@@ -53,12 +53,14 @@ class _TypingMarkdownState extends State<TypingMarkdown> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return MarkdownBody(
       data: _displayText,
       styleSheet: MarkdownStyleSheet(
         p: widget.textTheme.displayMedium,
         strong: widget.textTheme.displayMedium?.copyWith(
           fontWeight: FontWeight.bold,
+          color: theme.hintColor
         ),
       ),
     );

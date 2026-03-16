@@ -1,3 +1,4 @@
+import 'package:elf_flutter/provider/auth_state.dart';
 import 'package:elf_flutter/shared/theme.dart';
 import 'package:elf_flutter/provider/shellView.dart';
 import 'package:flutter/material.dart';
@@ -9,336 +10,381 @@ class Settings extends ConsumerStatefulWidget {
   const Settings({super.key});
 
   @override
-  ConsumerState<Settings> createState() => _SettingsContentState();
+  ConsumerState<Settings> createState() => _SettingsState();
 }
 
-class _SettingsContentState extends ConsumerState<Settings> {
-  final String? profileImage = null;
-
-
-  bool generateVideosForImages = false;
-  bool autoplayVideosInFeed = false;
+class _SettingsState extends ConsumerState<Settings> {
   bool hapticsOnButtons = false;
   bool hapticsOnResponse = false;
 
-  final List<String> socialIconAssetPaths = [];
-
   @override
   Widget build(BuildContext context) {
-    final theme = ref.watch(themeControllerProvider);
-    final Texttheme = Theme.of(context).textTheme;
-    final Themee = Theme.of(context);
+    final themeMode = ref.watch(themeControllerProvider);
+    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final authState = ref.watch(authProvider);
+    final userProfile = authState.userProfile;
+
+    final displayName =
+        userProfile?.fullName ?? userProfile?.userName ?? 'Guest';
+    final email = userProfile?.email ?? '';
+    final imageUrl = userProfile?.imageUrl?.toString();
+
     return SafeArea(
       child: ListView(
         padding: EdgeInsets.symmetric(vertical: 2.h, horizontal: 2.h),
         children: [
+          // ── Back ─────────────────────────────────────────────────────────
           Align(
             alignment: Alignment.topLeft,
             child: HeroButton(
-             child:  Icon( Icons.arrow_back,),
-              onPressed: () {
-                ref.read(shellViewProvider.notifier).state = ShellView.chat;
-              },
+              child: const Icon(Icons.arrow_back),
+              onPressed: () =>
+                  ref.read(shellViewProvider.notifier).state = ShellView.chat,
             ),
           ),
-      
-          _buildProfileHeader(),
-      
+
+          // ── Profile header ────────────────────────────────────────────────
+          Center(
+            child: Column(
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    CircleAvatar(
+                      radius: 52,
+                      backgroundColor: theme.canvasColor,
+                      child: ClipOval(
+                        child: SizedBox(
+                          width: 104,
+                          height: 104,
+                          child: _profileImage(imageUrl),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: -4,
+                      bottom: -4,
+                      child: CircleAvatar(
+                        radius: 16,
+                        backgroundColor: theme.canvasColor,
+                        child: const Icon(Icons.edit, size: 16),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(displayName, style: textTheme.labelMedium),
+                const SizedBox(height: 6),
+                if (email.isNotEmpty)
+                  Text(
+                    email,
+                    style: textTheme.labelMedium?.copyWith(
+                      color: Colors.grey[500],
+                      fontSize: 12,
+                    ),
+                  ),
+                // Sign-in prompt for guests
+                if (!authState.isAuthenticated) ...[
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: () => ref
+                        .read(shellViewProvider.notifier)
+                        .state = ShellView.onboarding,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 7),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        color: theme.hintColor
+                      ),
+                      child: Text(
+                        'Sign in with Google',
+                        style:
+                            textTheme.labelSmall?.copyWith(color: theme.scaffoldBackgroundColor),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
           SizedBox(height: 2.h),
-      
-          sectionHeader('Appearance'),
+
+          // ── Appearance ────────────────────────────────────────────────────
+          _sectionHeader('Appearance'),
           SizedBox(height: 1.h),
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 2.h),
-            decoration: BoxDecoration(color: Themee.canvasColor,
-            borderRadius: BorderRadius.circular(20),),
+            decoration: BoxDecoration(
+              color: theme.canvasColor,
+              borderRadius: BorderRadius.circular(20),
+            ),
             child: Wrap(
               spacing: 12,
               runSpacing: 8,
               children: [
-                _appearanceChip(label: 'System', mode: ThemeMode.system, currentTheme: theme, icon: Icons.tune, onTap:(){
-                  ref.read(themeControllerProvider.notifier).setSystem();
-                } ),
-      
-                _appearanceChip(
+                _chip(
+                  label: 'System',
+                  mode: ThemeMode.system,
+                  current: themeMode,
+                  icon: Icons.tune,
+                  onTap: () =>
+                      ref.read(themeControllerProvider.notifier).setSystem(),
+                ),
+                _chip(
                   label: 'Dark',
                   mode: ThemeMode.dark,
-                  currentTheme: theme,
+                  current: themeMode,
                   icon: Icons.nightlight_round,
-                   onTap:(){
-                  ref.read(themeControllerProvider.notifier).setDark();
-                }
+                  onTap: () =>
+                      ref.read(themeControllerProvider.notifier).setDark(),
                 ),
-                _appearanceChip(
+                _chip(
                   label: 'Light',
                   mode: ThemeMode.light,
-                  currentTheme: theme,
+                  current: themeMode,
                   icon: Icons.wb_sunny_outlined,
-                   onTap:(){
-                  ref.read(themeControllerProvider.notifier).setLight();
-                }
-                )
+                  onTap: () =>
+                      ref.read(themeControllerProvider.notifier).setLight(),
+                ),
               ],
-            ),).animate().fadeIn().slideX(begin: -0.3),
-          
+            ),
+          ).animate().fadeIn().slideX(begin: -0.3),
+
           SizedBox(height: 2.h),
-      
-          sectionHeader('Haptics & Vibration'),
+
+          // ── Haptics ───────────────────────────────────────────────────────
+          _sectionHeader('Haptics & Vibration'),
           SizedBox(height: 1.h),
           Container(
-            padding: EdgeInsets.all(10),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Themee.canvasColor,
-              borderRadius: BorderRadius.circular(20)
+              color: theme.canvasColor,
+              borderRadius: BorderRadius.circular(20),
             ),
             child: Column(
               children: [
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    'When pressing buttons',
-                    style: Texttheme.labelMedium?.copyWith(color: Themee.secondaryHeaderColor),
-                  ),
-                  value: hapticsOnButtons,
-                  onChanged: (v) => setState(() => hapticsOnButtons = v),
-                  secondary: Icon(Icons.touch_app_outlined, color: Themee.secondaryHeaderColor),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                
-                  activeColor: Colors.white,
-                
-                  activeTrackColor: Themee.secondaryHeaderColor,
-                
-                  inactiveThumbColor: Colors.grey.shade700,
-                
-                  inactiveTrackColor: Colors.white,
+                _hapticTile(
+                  'When pressing buttons',
+                  Icons.touch_app_outlined,
+                  hapticsOnButtons,
+                  (v) => setState(() => hapticsOnButtons = v),
                 ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    'When Genie is responding',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelMedium?.copyWith(color: Themee.secondaryHeaderColor),
-                  ),
-                  value: hapticsOnResponse,
-                  onChanged: (v) => setState(() => hapticsOnResponse = v),
-                  secondary: Icon(Icons.smart_toy_outlined, color: Themee.secondaryHeaderColor),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                
-                  activeColor: Colors.white,
-                
-                  activeTrackColor: Themee.secondaryHeaderColor,
-                
-                  inactiveThumbColor: Colors.grey.shade700,
-                
-                  inactiveTrackColor: Colors.white,
+                _hapticTile(
+                  'When Genie is responding',
+                  Icons.smart_toy_outlined,
+                  hapticsOnResponse,
+                  (v) => setState(() => hapticsOnResponse = v),
                 ),
               ],
             ),
           ).animate().fadeIn().slideX(begin: 0.3),
-      
+
           SizedBox(height: 2.h),
-      
-          sectionHeader('Data & Information'),
+
+          // ── Data & Info ───────────────────────────────────────────────────
+          _sectionHeader('Data & Information'),
           SizedBox(height: 1.h),
           Container(
-            padding: EdgeInsets.all(8),
-            decoration: BoxDecoration(color: Themee.canvasColor,
-            borderRadius: BorderRadius.circular(20)
-          
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: theme.canvasColor,
+              borderRadius: BorderRadius.circular(20),
             ),
-      
             child: Column(
               children: [
-                NavigationTile( icon: Icons.tune, text: 'Customize Genie', onTap: () {}),
-                NavigationTile( icon: Icons.storage, text: 'Data Controls', onTap: () {}),
-                NavigationTile( icon: Icons.privacy_tip_outlined, text: 'Privacy Policy', onTap: () {}),
-                
-                NavigationTile( icon: Icons.report_problem_outlined, text: 'Report Issue', onTap: () {}),
+                NavigationTile(
+                    icon: Icons.tune,
+                    text: 'Customize Genie',
+                    onTap: () {}),
+                NavigationTile(
+                    icon: Icons.storage,
+                    text: 'Data Controls',
+                    onTap: () {}),
+                NavigationTile(
+                    icon: Icons.privacy_tip_outlined,
+                    text: 'Privacy Policy',
+                    onTap: () {}),
+                NavigationTile(
+                    icon: Icons.report_problem_outlined,
+                    text: 'Report Issue',
+                    onTap: () {}),
               ],
             ),
           ).animate().fadeIn().slideY(begin: 0.3),
-      
+
           SizedBox(height: 2.h),
-      
-          TextButton(onPressed: (){}, child: Text('LogOut',
-          style: Texttheme.labelMedium?.copyWith(color: Colors.red),
-          ))
-      
+
+          // ── Sign out / Sign in ────────────────────────────────────────────
+          if (authState.isAuthenticated)
+            TextButton(
+              onPressed: _confirmSignOut,
+              child: Text(
+                'Sign Out',
+                style: textTheme.labelMedium?.copyWith(color: Colors.red),
+              ),
+            )
+          else
+            TextButton(
+              onPressed: () => ref
+                  .read(shellViewProvider.notifier)
+                  .state = ShellView.onboarding,
+              child: Text(
+                'Sign In',
+                style:
+                    textTheme.labelMedium?.copyWith(color: AppColors.accent),
+              ),
+            ),
         ],
       ),
     );
   }
 
-
-
-
-
-
-
-
-
-
-
-  Widget _buildProfileHeader() {
-    final Texttheme = Theme.of(context).textTheme;
-    final Themee = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Center(
-          child: Column(
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  CircleAvatar(
-                    radius: 52,
-                    backgroundColor: Themee.canvasColor,
-                    child: ClipOval(
-                      child: SizedBox(
-                        width: 104,
-                        height: 104,
-                        child: _buildProfileImage(),
-                      ),
-                    ),
-                  ),
-
-                  Positioned(
-                    right: -4,
-                    bottom: -4,
-                    child: GestureDetector(
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Edit profile tapped')),
-                        );
-                      },
-                      child: CircleAvatar(
-                        radius: 16,
-                        backgroundColor: Themee.canvasColor,
-                        child: Icon(Icons.edit, size: 16),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 12),
-              Text('Ghost', style: Texttheme.labelMedium),
-              SizedBox(height: 6),
-              Text(
-                'ghostUser@mail.com',
-                style: Texttheme.labelMedium?.copyWith(
-                  color: Colors.grey[500],
-                  fontSize: 12,
-                ),
-              ),
-            ],
+  Future<void> _confirmSignOut() async {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Sign out?', style: textTheme.displayMedium),
+        content: Text(
+          'You can still use the app as a guest after signing out.',
+          style: textTheme.labelMedium
+              ?.copyWith(color: theme.secondaryHeaderColor.withOpacity(0.6)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Cancel', style: textTheme.labelMedium),
           ),
-        ),
-      ],
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('Sign out',
+                style: textTheme.labelMedium?.copyWith(color: Colors.red)),
+          ),
+        ],
+      ),
     );
-  }
-
-  Widget _buildProfileImage() {
-    if (profileImage == null) {
-      return Container(
-        color: Colors.transparent,
-        child: Center(
-          child: Icon(Icons.person, size: 48, color: Colors.grey[700]),
-        ),
-      );
-    } else if (profileImage!.startsWith('http')) {
-      return Image.network(
-        profileImage!,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) {
-          return Center(
-            child: Icon(Icons.person, size: 48, color: Colors.grey[700]),
-          );
-        },
-      );
-    } else {
-      return Image.asset(profileImage!, fit: BoxFit.cover);
+    if (confirmed == true && mounted) {
+      await ref.read(authProvider.notifier).signOut();
     }
   }
 
-  Widget sectionHeader(String text) {
-    final Texttheme = Theme.of(context).textTheme;
-    return Text(text, style: Texttheme.labelLarge);
-  }
-
-  Widget _appearanceChip({
-    required String label,
-    required ThemeMode mode,
-    required ThemeMode currentTheme,
-    required VoidCallback onTap,
-    IconData? icon,
-
-
-  }) {
-    final bool selected = currentTheme == mode;
-     final Texttheme = Theme.of(context).textTheme;
-     final Themee = Theme.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: ChoiceChip(
-        avatar:
-            icon != null
-                ? Icon(
-                  icon,
-                  size: 18,
-                  color: selected ? Colors.black : Colors.white,
-                )
-                : null,
-        label: Text(label),
-        selected: selected,
-        onSelected: (_) => onTap(),
-        
-        selectedColor: Colors.white,
-        backgroundColor: Colors.black,
-        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-        labelStyle: Texttheme.labelMedium?.copyWith(color: selected? Colors.black: Colors.white),
-        elevation: 0,
-        side: BorderSide(color: Themee.secondaryHeaderColor,),
-      ),
+  Widget _profileImage(String? url) {
+    if (url != null && url.isNotEmpty) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) =>
+            Center(child: Icon(Icons.person, size: 48, color: Colors.grey[700])),
+      );
+    }
+    return Container(
+      color: Colors.transparent,
+      child:
+          Center(child: Icon(Icons.person, size: 48, color: Colors.grey[700])),
     );
   }
 
+  Widget _sectionHeader(String text) =>
+      Text(text, style: Theme.of(context).textTheme.labelLarge);
+
+  Widget _hapticTile(
+    String title,
+    IconData icon,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) {
+    final theme = Theme.of(context);
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(
+        title,
+        style: Theme.of(context)
+            .textTheme
+            .labelMedium
+            ?.copyWith(color: theme.secondaryHeaderColor),
+      ),
+      value: value,
+      onChanged: onChanged,
+      secondary: Icon(icon, color: theme.secondaryHeaderColor),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      activeColor: Colors.white,
+      activeTrackColor: theme.secondaryHeaderColor,
+      inactiveThumbColor: Colors.grey.shade700,
+      inactiveTrackColor: Colors.white,
+    );
+  }
+
+  Widget _chip({
+    required String label,
+    required ThemeMode mode,
+    required ThemeMode current,
+    required VoidCallback onTap,
+    IconData? icon,
+  }) {
+    final selected = current == mode;
+    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: ChoiceChip(
+        avatar: icon != null
+            ? Icon(icon,
+                size: 18, color: selected ? Colors.black : Colors.white)
+            : null,
+        label: Text(label),
+        selected: selected,
+        onSelected: (_) => onTap(),
+        selectedColor: Colors.white,
+        backgroundColor: Colors.black,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        labelStyle: textTheme.labelMedium
+            ?.copyWith(color: selected ? Colors.black : Colors.white),
+        elevation: 0,
+        side: BorderSide(color: theme.secondaryHeaderColor),
+      ),
+    );
+  }
 }
 
-
-
+// ─────────────────────────────────────────────
+//  SHARED WIDGETS (kept here so imports don't break)
+// ─────────────────────────────────────────────
 
 class NavigationTile extends StatelessWidget {
   const NavigationTile({
     super.key,
-
     required this.icon,
     required this.text,
     required this.onTap,
   });
 
- 
   final IconData icon;
   final String text;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final Texttheme = Theme.of(context).textTheme;
-        final Themee = Theme.of(context);
+    final theme = Theme.of(context);
     return ListTile(
-      contentPadding: EdgeInsets.symmetric(horizontal: 0.2.h, vertical: 0.5.h),
-      leading: Icon(icon, color: Themee.secondaryHeaderColor),
+      contentPadding:
+          EdgeInsets.symmetric(horizontal: 0.2.h, vertical: 0.5.h),
+      leading: Icon(icon, color: theme.secondaryHeaderColor),
       title: Text(
         text,
-        style: Texttheme.labelMedium?.copyWith(color: Themee.secondaryHeaderColor),
+        style: theme.textTheme.labelMedium
+            ?.copyWith(color: theme.secondaryHeaderColor),
       ),
       onTap: onTap,
     );
   }
 }
-
 
 class HeroButton extends StatelessWidget {
   const HeroButton({super.key, required this.onPressed, required this.child});

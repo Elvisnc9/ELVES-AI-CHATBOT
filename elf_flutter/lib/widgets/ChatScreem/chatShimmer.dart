@@ -10,11 +10,11 @@ Widget chatBubbleShimmer({required bool isUser}) {
           ? Alignment.centerRight
           : Alignment.centerLeft,
       child: Container(
-        height: isUser? 5.h : 8.h,
+        height: isUser? 6.h : 10.h,
         margin: const EdgeInsets.symmetric(vertical: 12),
         padding: const EdgeInsets.all(12),
         constraints: BoxConstraints(
-          maxWidth: isUser ? 65.w : 100.w,
+          maxWidth: isUser ? 40.w : 80.w,
         ),
         decoration: BoxDecoration(
           color: Colors.grey.withOpacity(0.4),
@@ -39,7 +39,7 @@ Widget chatShimmerList() {
       left: 12,
       right: 12,
     ),
-    itemCount: 8,
+    itemCount: 5,
     itemBuilder: (_, index) {
       final isUser = index % 2 == 0;
       return chatBubbleShimmer(isUser: isUser);

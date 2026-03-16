@@ -1,144 +1,161 @@
-// import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:serverpod_auth_core_client/serverpod_auth_core_client.dart';
 
-// import 'package:elf_client/elf_client.dart';
-// import 'package:elf_flutter/main.dart';
+import 'package:elf_flutter/main.dart';
 
-// // Define the state for your authentication
-// enum AuthStatus {
-//   initial,
-//   loading,
-//   authenticated,
-//   unauthenticated,
-//   error,
-// }
+// ─────────────────────────────────────────────
+//  AUTH STATUS
+// ─────────────────────────────────────────────
 
-// class AuthState {
-//   final AuthStatus status;
-//   final UserProfileModel? userProfile;
-//   final String? errorMessage;
+enum AuthStatus {
+  loading,
+  authenticated,
+  unauthenticated, // guest — can still use the app freely
+}
 
-//   AuthState({
-//     required this.status,
-//     this.userProfile,
-//     this.errorMessage,
-//   });
+// ─────────────────────────────────────────────
+//  AUTH STATE
+// ─────────────────────────────────────────────
 
-//   AuthState copyWith({
-//     AuthStatus? status,
-//     UserProfileModel? userProfile,
-//     String? errorMessage,
-//   }) {
-//     return AuthState(
-//       status: status ?? this.status,
-//       userProfile: userProfile ?? this.userProfile,
-//       errorMessage: errorMessage ?? this.errorMessage,
-//     );
-//   }
-// }
+class AuthState {
+  final AuthStatus status;
+  final UserProfileModel? userProfile;
+  final String? errorMessage;
 
-// // Provider for the Serverpod client (assuming it's globally accessible)
-// final clientProvider = Provider<Client>((ref) => client); // 'client' from your main.dart
+  const AuthState({
+    required this.status,
+    this.userProfile,
+    this.errorMessage,
+  });
 
-// // AuthController for Riverpod
-// final authControllerProvider = NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
+  bool get isAuthenticated => status == AuthStatus.authenticated;
+  bool get isLoading => status == AuthStatus.loading;
 
-// class AuthNotifier extends Notifier<AuthState> {
-//   late GoogleAuthController _googleAuthController;
-//   late Client _client;
+  AuthState copyWith({
+    AuthStatus? status,
+    UserProfileModel? userProfile,
+    bool clearProfile = false,
+    String? errorMessage,
+    bool clearError = false,
+  }) {
+    return AuthState(
+      status: status ?? this.status,
+      userProfile: clearProfile ? null : (userProfile ?? this.userProfile),
+      errorMessage:
+          clearError ? null : (errorMessage ?? this.errorMessage),
+    );
+  }
+}
 
-//   @override
-//   AuthState build() {
-//     _client = ref.read(clientProvider);
+// ─────────────────────────────────────────────
+//  AUTH NOTIFIER
+//
+//  State is driven by callbacks from GoogleSignInWidget
+//  (onAuthenticated / onError) which live in onboarding.dart.
+//
+//  main() already called client.auth.initialize(), so on
+//  app start we check the client's current signed-in status
+//  directly and fetch the profile if needed.
+// ─────────────────────────────────────────────
 
-//     _googleAuthController = GoogleAuthController(
-//       client: _client,
-//       onAuthenticated: _onAuthenticated,
-//       onError: _onError,
-//       attemptLightweightSignIn: false,
-//       scopes: const [
-//         'https://www.googleapis.com/auth/userinfo.email',
-//         'https://www.googleapis.com/auth/userinfo.profile',
-//       ],
-//     );
+class AuthNotifier extends Notifier<AuthState> {
+  @override
+  AuthState build() {
+    // Check whether initialize() already restored a valid session.
+    _checkRestoredSession();
+    // Start as unauthenticated; _checkRestoredSession will update if needed.
+    return const AuthState(status: AuthStatus.unauthenticated);
+  }
 
-//     _googleAuthController.addListener(_updateStateFromController);
-//     ref.onDispose(() {
-//       _googleAuthController.removeListener(_updateStateFromController);
-//       _googleAuthController.dispose();
-//     });
+  // ── Called once on startup ───────────────────────────────────────────────
 
-//     // Initial state based on client.auth (Serverpod's session manager)
-//     if (_client.auth.isAuthenticated) {
-//       _fetchUserProfile();
-//       return AuthState(status: AuthStatus.authenticated);
-//     }
-//     return AuthState(status: AuthStatus.unauthenticated);
-//   }
+  Future<void> _checkRestoredSession() async {
+    // client.auth.isSignedIn tells us whether initialize() found
+    // a valid stored session.
+    if (!client.auth.isAuthenticated) return;
 
-//   void _updateStateFromController() {
-//     switch (_googleAuthController.state) {
-//       case GoogleAuthState.initializing:
-//       case GoogleAuthState.idle:
-//         // No change, or handled by isAuthenticated check
-//         break;
-//       case GoogleAuthState.loading:
-//         state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
-//         break;
-//       case GoogleAuthState.error:
-//         state = state.copyWith(status: AuthStatus.error, errorMessage: _googleAuthController.errorMessage);
-//         break;
-//       case GoogleAuthState.authenticated:
-//         _fetchUserProfile(); // Fetch profile when authenticated
-//         break;
-//     }
-//   }
+    state = state.copyWith(status: AuthStatus.loading);
+    await _fetchProfile();
+  }
 
-//   Future<void> _onAuthenticated() async {
-//     // This callback means Serverpod has successfully authenticated the user.
-//     await _fetchUserProfile();
-//   }
+  // ── Called by GoogleSignInWidget's onAuthenticated callback ─────────────
 
-//  void _onError(dynamic error) {
-//     // Detect cancellation by checking error text to avoid referencing an undefined type.
-//     final message = error?.toString() ?? '';
-//     if (message.contains('canceled') || message.contains('cancelled')) {
-//       // User explicitly cancelled the sign-in flow.
-//       // You might reset the state or just log it without showing an error to the user.
-//       print('Google Sign-In cancelled by user.');
-//       state = state.copyWith(status: AuthStatus.unauthenticated, errorMessage: null); // Reset to unauthenticated
-//     } else {
-//       // Other types of errors (e.g., network issues, configuration errors)
-//       print('Google Sign-In error: $error');
-//       state = state.copyWith(status: AuthStatus.error, errorMessage: message);
-//     }
-//   }
-//   Future<void> signInWithGoogle() async {
-//     if (state.status == AuthStatus.loading) return;
-//     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
-//     await _googleAuthController.signIn();
-//   }
+  Future<void> onSignedIn() async {
+    state = state.copyWith(status: AuthStatus.loading, clearError: true);
+    await _fetchProfile();
+  }
 
-//   Future<void> signOut() async {
-//     state = state.copyWith(status: AuthStatus.loading);
-//     await _client.auth.signOutDevice();
-//     state = AuthState(status: AuthStatus.unauthenticated, userProfile: null);
-//   }
+  // ── Called by GoogleSignInWidget's onError callback ─────────────────────
 
-//   Future<void> _fetchUserProfile() async {
-//     try {
-//       final userProfile = await _client.modules.serverpod_auth_core.userProfileInfo.get();
-//       state = AuthState(status: AuthStatus.authenticated, userProfile: userProfile, errorMessage: null);
-//         } catch (e) {
-//       state = AuthState(status: AuthStatus.error, errorMessage: 'Failed to fetch user profile: $e');
-//     }
-//   }
+  void onSignInError(dynamic error) {
+    final msg = error?.toString() ?? '';
+    // Cancelled — silent guest fallback, no error shown.
+    if (msg.toLowerCase().contains('cancel') ||
+        msg.toLowerCase().contains('sign_in_canceled')) {
+      state = state.copyWith(
+        status: AuthStatus.unauthenticated,
+        clearProfile: true,
+        clearError: true,
+      );
+    } else {
+      state = state.copyWith(
+        status: AuthStatus.unauthenticated,
+        clearProfile: true,
+        errorMessage: msg,
+      );
+    }
+  }
 
-//   // Method to manually refresh user profile (e.g., after updating it)
-//   Future<void> refreshUserProfile() async {
-//     if (state.status == AuthStatus.authenticated) {
-//       await _fetchUserProfile();
-//     }
-//   }
-// }
+  // ── Sign out ─────────────────────────────────────────────────────────────
 
+  Future<void> signOut() async {
+    state = state.copyWith(status: AuthStatus.loading);
+    try {
+      await client.auth.signOutDevice();
+    } catch (_) {
+      // Best-effort.
+    }
+    state = const AuthState(
+      status: AuthStatus.unauthenticated,
+      userProfile: null,
+    );
+  }
+
+  // ── Profile ──────────────────────────────────────────────────────────────
+
+  Future<void> refreshProfile() async {
+    if (state.isAuthenticated) await _fetchProfile();
+  }
+
+  Future<void> _fetchProfile() async {
+    try {
+      final profile =
+          await client.modules.serverpod_auth_core.userProfileInfo.get();
+      state = AuthState(
+        status: AuthStatus.authenticated,
+        userProfile: profile,
+      );
+    } catch (_) {
+      // Profile fetch failed (stale token, network error).
+      // Fall back to guest — the session is invalid.
+      state = const AuthState(
+        status: AuthStatus.unauthenticated,
+        userProfile: null,
+        errorMessage: 'Session expired. Please sign in again.',
+      );
+    }
+  }
+}
+
+// ─────────────────────────────────────────────
+//  PROVIDERS
+// ─────────────────────────────────────────────
+
+final authProvider =
+    NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
+
+final authStatusProvider =
+    Provider<AuthStatus>((ref) => ref.watch(authProvider).status);
+
+final userProfileProvider = Provider<UserProfileModel?>(
+    (ref) => ref.watch(authProvider).userProfile);

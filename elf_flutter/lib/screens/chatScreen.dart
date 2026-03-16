@@ -115,103 +115,101 @@ class _ChatViewState extends ConsumerState<ChatView>
 
     final isLoadingConversation = chatState.isLoadingConversation;
 
-    return SafeArea(
-      child: AnimatedPadding(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: SizedBox.expand(
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: AnimatedOpacity(
-                  opacity: (hasMessages || isLoadingConversation) ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 400),
-                  curve: Curves.easeOut,
-                  child: IgnorePointer(
-                    ignoring: !hasMessages && !isLoadingConversation,
-                    child: RepaintBoundary(
-                      child: ShaderMask(
-                        shaderCallback: (Rect bounds) {
-                          return const LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black,
-                              Colors.black,
-                              Colors.transparent,
-                            ],
-                            stops: [0.0, 0.30, 0.80, 1.0],
-                          ).createShader(bounds);
-                        },
-                        blendMode: BlendMode.dstIn,
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          child: isLoadingConversation
-                              ? KeyedSubtree(
-                                  key: const ValueKey('shimmer'),
-                                  child: chatShimmerList(),
-                                )
-                              : KeyedSubtree(
-                                  key: const ValueKey('messages'),
-                                  child: ListView.builder(
-                                    controller: _scrollController,
-                                    reverse: true,
-                                    padding: EdgeInsets.only(
-                                      top: 20.h,
-                                      bottom: 15.h,
-
-                                      left: 12,
-                                      right: 12,
-                                    ),
-                                    itemCount: messages.length,
-                                    itemBuilder: (context, index) {
-                                      final message = messages[index];
-                                      return _chatBubble(
-                                        message,
-                                        key: ValueKey(message.id),
-                                      );
-                                    },
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SizedBox.expand(
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: AnimatedOpacity(
+                opacity: (hasMessages || isLoadingConversation) ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeOut,
+                child: IgnorePointer(
+                  ignoring: !hasMessages && !isLoadingConversation,
+                  child: RepaintBoundary(
+                    child: ShaderMask(
+                      shaderCallback: (Rect bounds) {
+                        return const LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black,
+                            Colors.black,
+                            Colors.transparent,
+                          ],
+                          stops: [0.0, 0.30, 0.80, 1.0],
+                        ).createShader(bounds);
+                      },
+                      blendMode: BlendMode.dstIn,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child: isLoadingConversation
+                            ? KeyedSubtree(
+                                key: const ValueKey('shimmer'),
+                                child: chatShimmerList(),
+                              )
+                            : KeyedSubtree(
+                                key: const ValueKey('messages'),
+                                child: ListView.builder(
+                                  controller: _scrollController,
+                                  reverse: true,
+                                  padding: EdgeInsets.only(
+                                    top: 20.h,
+                                    bottom: 15.h,
+    
+                                    left: 12,
+                                    right: 12,
                                   ),
+                                  itemCount: messages.length,
+                                  itemBuilder: (context, index) {
+                                    final message = messages[index];
+                                    return _chatBubble(
+                                      message,
+                                      key: ValueKey(message.id),
+                                    );
+                                  },
                                 ),
-                        ),
+                              ),
                       ),
                     ),
                   ),
                 ),
               ),
-
-              Positioned.fill(
-                child: AnimatedOpacity(
-                  opacity: (hasMessages || isLoadingConversation) ? 0.0 : 1.0,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeIn,
-                  child: IgnorePointer(
-                    ignoring: hasMessages || isLoadingConversation,
-                    child: _buildWelcomeContent(theme),
-                  ),
+            ),
+    
+            Positioned.fill(
+              child: AnimatedOpacity(
+                opacity: (hasMessages || isLoadingConversation) ? 0.0 : 1.0,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeIn,
+                child: IgnorePointer(
+                  ignoring: hasMessages || isLoadingConversation,
+                  child: _buildWelcomeContent(theme),
                 ),
               ),
-
-              Positioned(
-                top: 3.h,
-                left: 0,
-                right: 0,
-                child: _buildMenuBar(theme),
-              ),
-
-              Positioned(
-                bottom: 10,
-                left: 0,
-                right: 0,
-                child: _buildInputBar(theme, chatState.isLoading),
-              ),
-            ],
-          ),
+            ),
+    
+            Positioned(
+              top: 3.h,
+              left: 0,
+              right: 0,
+              child: _buildMenuBar(theme),
+            ),
+    
+            Positioned(
+              bottom: 10,
+              left: 0,
+              right: 0,
+              child: _buildInputBar(theme, chatState.isLoading),
+            ),
+          ],
         ),
       ),
     );
@@ -329,8 +327,7 @@ class _ChatViewState extends ConsumerState<ChatView>
                         ? GestureDetector(
                             key: const ValueKey('voice'),
                             onTap: () {
-                              ref.read(shellViewProvider.notifier).state =
-                                  ShellView.voicechat;
+                             
                             },
                             child: Padding(
                               padding: const EdgeInsets.only(left: 8),
@@ -467,7 +464,7 @@ class _ChatViewState extends ConsumerState<ChatView>
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Align(
           alignment: Alignment.centerLeft,
-          child: BouncingTypingDots(),
+          child: ScalingTypingDot(),
         ),
       );
     }
