@@ -1,5 +1,6 @@
 enum AppErrorType {
   network,
+  slowConnection,
   timeout,
   rateLimit,
   server,

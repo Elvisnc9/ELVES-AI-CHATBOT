@@ -72,17 +72,17 @@ class _ChatViewState extends ConsumerState<ChatView>
     });
   }
 
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.minScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeIn,
-        );
-      }
-    });
-  }
+
+void _smoothScrollToLatest() {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!mounted || !_scrollController.hasClients) return;
+
+    _scrollController.animateTo(
+      _scrollController.position.minScrollExtent,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutCubic,  // ← feels natural, like GPT
+    );
+  });}
 
   @override
   void dispose() {
@@ -97,15 +97,25 @@ class _ChatViewState extends ConsumerState<ChatView>
   List<ChatMessage> get messages => chatState.messages;
   bool get hasMessages => messages.isNotEmpty;
   ThemeData get theme => Theme.of(context);
+  
 
   @override
   Widget build(BuildContext context) {
-    if (messages.length != _prevMessageCount) {
-      _prevMessageCount = messages.length;
-      if (hasMessages) _scrollToBottom();
-    }
+   final currentCount = messages.length;
+
+  if (currentCount != _prevMessageCount) {
+    _prevMessageCount = currentCount;
+    if (hasMessages) _smoothScrollToLatest();
+  }
+  // ... rest of build
+
+
+
 
     final isLoadingConversation = chatState.isLoadingConversation;
+    final hint = chatState.connectionHint;
+   final showHint = hint != null;
+   final itemCount = messages.length + (showHint ? 1 : 0);
 
     return AnimatedPadding(
       duration: const Duration(milliseconds: 250),
@@ -158,13 +168,17 @@ class _ChatViewState extends ConsumerState<ChatView>
                                     left: 12,
                                     right: 12,
                                   ),
-                                  itemCount: messages.length,
-                                  itemBuilder: (context, index) {
-                                    final message = messages[index];
-                                    return _chatBubble(
-                                      message,
-                                      key: ValueKey(message.id),
-                                    );
+                                  itemCount: messages.length + (showHint ? 1 : 0),
+                                itemBuilder: (context, index) {
+     // index 0 is the TOP of the reversed list = most recent
+     // Show hint above the typing dot (index 0 slot)
+     if (showHint && index == 1) {
+       return _connectionHint(hint, theme);  // ← hint row
+     }
+      final msgIndex = (showHint && index > 1) ? index - 1 : index;
+     final message = messages[msgIndex];
+     return _chatBubble(message, key: ValueKey(message.id));
+//    }
                                   },
                                 ),
                               ),
@@ -226,174 +240,179 @@ class _ChatViewState extends ConsumerState<ChatView>
     );
   }
 
-  Widget _buildInputBar(ThemeData theme, bool isLoading) {
-    final bool isTyping = messages.any(
-      (m) => m.role == MessageRole.assistant && !m.isTypingComplete,
-    );
+Widget _buildInputBar(ThemeData theme, bool isLoading) {
+  final bool isTyping = messages.any(
+    (m) => m.role == MessageRole.assistant && !m.isTypingComplete,
+  );
 
-    final isGenerating = chatState.isGenerating;
-    final isLoadingConversation = chatState.isLoadingConversation;
-    final bool canSend = !isGenerating && !isTyping;
+  final isGenerating = chatState.isGenerating;
+  final isLoadingConversation = chatState.isLoadingConversation;
+  final bool canSend = !isGenerating && !isTyping;
 
-    final bool showVoiceButton =
-        ref.watch(chatProvider.notifier).activeConversationId == null &&
-        !isLoading;
+  final bool hasText = _textController.text.trim().isNotEmpty;
 
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: EdgeInsets.all(1.5.h),
+  final bool showVoiceButton =
+      ref.watch(chatProvider.notifier).activeConversationId == null &&
+      !isLoading &&
+      !hasText;
+
+  return Padding(
+    padding: const EdgeInsets.all(8.0),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          padding: EdgeInsets.all(1.5.h),
+          decoration: BoxDecoration(
+            color: theme.canvasColor,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.add,
+            color: theme.secondaryHeaderColor,
+            size: 2.5.h,
+          ),
+        ),
+
+        const SizedBox(width: 8),
+
+        Expanded(
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 1.2.h,
+            ),
             decoration: BoxDecoration(
               color: theme.canvasColor,
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(20),
             ),
-            child: Icon(
-              Icons.add,
-              color: theme.secondaryHeaderColor,
-              size: 2.5.h,
-            ),
-          ),
-
-          const SizedBox(width: 8),
-
-          Expanded(
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 1.2.h,
-              ),
-              decoration: BoxDecoration(
-                color: theme.canvasColor,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxHeight:
-                            5 *
-                                ((textTheme.labelMedium?.fontSize ?? 14.sp) *
-                                    1.4) +
-                            8,
-                      ),
-                      child: Scrollbar(
-                        child: TextField(
-                          enabled: !isLoading && !isLoadingConversation,
-                          controller: _textController,
-                          focusNode: _focusNode,
-                          cursorColor: theme.hintColor,
-                          keyboardType: TextInputType.multiline,
-                          textInputAction: TextInputAction.newline,
-                          maxLines: 5,
-                          minLines: 1,
-                          autofocus: true,
-                          style: textTheme.labelMedium,
-                          decoration: InputDecoration(
-                            hintText: 'Ask Anything...',
-                            hintStyle: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.bold,
-                              color: theme.cardColor,
-                            ),
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight:
+                          5 *
+                              ((textTheme.labelMedium?.fontSize ?? 14.sp) *
+                                  1.4) +
+                          8,
+                    ),
+                    child: Scrollbar(
+                      child: TextField(
+                        enabled: !isLoading && !isLoadingConversation,
+                        controller: _textController,
+                        focusNode: _focusNode,
+                        cursorColor: theme.hintColor,
+                        keyboardType: TextInputType.multiline,
+                        textInputAction: TextInputAction.newline,
+                        maxLines: 5,
+                        minLines: 1,
+                        autofocus: true,
+                        style: textTheme.labelMedium,
+                        onChanged: (_) {
+                          setState(() {});
+                        },
+                        decoration: InputDecoration(
+                          hintText: 'Ask Anything...',
+                          hintStyle: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.bold,
+                            color: theme.cardColor,
                           ),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
                         ),
                       ),
                     ),
                   ),
+                ),
 
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    transitionBuilder: (child, animation) =>
-                        ScaleTransition(scale: animation, child: child),
-                    child: showVoiceButton
-                        ? GestureDetector(
-                            key: const ValueKey('voice'),
-                            onTap: () {},
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 8),
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: theme.dividerColor,
-                                ),
-                                child: Image.asset(
-                                  'assets/SoundWaves.png',
-                                  color: theme.scaffoldBackgroundColor,
-                                  width: 25,
-                                ),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  transitionBuilder: (child, animation) =>
+                      ScaleTransition(scale: animation, child: child),
+                  child: showVoiceButton
+                      ? GestureDetector(
+                          key: const ValueKey('voice'),
+                          onTap: () {},
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: theme.dividerColor,
+                              ),
+                              child: Image.asset(
+                                'assets/SoundWaves.png',
+                                color: theme.scaffoldBackgroundColor,
+                                width: 25,
                               ),
                             ),
-                          )
-                        : const SizedBox.shrink(key: ValueKey('no-voice')),
-                  ),
+                          ),
+                        )
+                      : const SizedBox.shrink(key: ValueKey('no-voice')),
+                ),
 
-                  const SizedBox(width: 8),
+                const SizedBox(width: 8),
 
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    transitionBuilder: (child, animation) =>
-                        ScaleTransition(scale: animation, child: child),
-                    child: GestureDetector(
-                      key: ValueKey(!canSend),
-                      onTap: isLoadingConversation
-                          ? null
-                          : () async {
-                              if (!canSend) {
-                                ref
-                                    .read(chatProvider.notifier)
-                                    .stopGeneration();
-                                return;
-                              }
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, animation) =>
+                      ScaleTransition(scale: animation, child: child),
+                  child: GestureDetector(
+                    key: ValueKey(!canSend),
+                    onTap: isLoadingConversation
+                        ? null
+                        : () async {
+                            if (!canSend) {
+                              ref.read(chatProvider.notifier).stopGeneration();
+                              return;
+                            }
 
-                              final text = _textController.text.trim();
-                              if (text.isEmpty) return;
+                            final text = _textController.text.trim();
+                            if (text.isEmpty) return;
 
-                              _textController.clear();
-                              _focusNode.unfocus();
+                            _textController.clear();
+                            setState(() {}); // so voice button can return
+                            _focusNode.unfocus();
 
-                              await ref
-                                  .read(chatProvider.notifier)
-                                  .sendMessage(text);
+                            await ref
+                                .read(chatProvider.notifier)
+                                .sendMessage(text);
 
-                              _scrollToBottom();
-                            },
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: theme.dividerColor,
-                        ),
-                        child: !canSend
-                            ? Icon(
-                                Icons.stop,
-                                size: 30,
-                                color: theme.scaffoldBackgroundColor,
-                              )
-                            : Image.asset(
-                                'assets/send.png',
-                                width: 25,
-                                color: theme.scaffoldBackgroundColor,
-                              ),
+                            _smoothScrollToLatest();
+                          },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: theme.dividerColor,
                       ),
+                      child: !canSend
+                          ? Icon(
+                              Icons.stop,
+                              size: 30,
+                              color: theme.scaffoldBackgroundColor,
+                            )
+                          : Image.asset(
+                              'assets/send.png',
+                              width: 25,
+                              color: theme.scaffoldBackgroundColor,
+                            ),
                     ),
                   ),
-                ],
-              ),
-            ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.2),
-          ),
-        ],
-      ),
-    );
-  }
+                ),
+              ],
+            ),
+          ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.2),
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildMenuBar(ThemeData theme) {
     return Padding(
@@ -454,6 +473,10 @@ class _ChatViewState extends ConsumerState<ChatView>
         ),
       );
     }
+
+      if (message.isError) {
+    return _softErrorBubble(message, theme, textTheme);
+  }
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: isUser ? 1.h : 0),
@@ -536,4 +559,83 @@ class _ChatViewState extends ConsumerState<ChatView>
   Widget _actionIcon(IconData icon) {
     return Icon(icon, size: 18, color: theme.hintColor);
   }
+
+  Widget _connectionHint(String hint, ThemeData theme) {
+  return TweenAnimationBuilder<double>(
+    tween: Tween(begin: 0, end: 1),
+    duration: const Duration(milliseconds: 500),
+    curve: Curves.easeOut,
+    builder: (context, value, child) => Opacity(
+      opacity: value,
+      child: Transform.translate(
+        offset: Offset(0, 8 * (1 - value)),
+        child: child,
+      ),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.only(left: 14, bottom: 6, top: 2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            hint,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.hintColor.withOpacity(0.45),
+              fontWeight: FontWeight.w400,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _softErrorBubble(ChatMessage message, ThemeData theme, TextTheme textTheme) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        constraints: BoxConstraints(maxWidth: double.infinity),
+        decoration: BoxDecoration(
+          color: theme.hintColor.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: theme.hintColor.withOpacity(0.12),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Icon(
+                Icons.info_outline_rounded,
+                size: 15,
+                color: theme.hintColor.withOpacity(0.4),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                message.text,
+                style: textTheme.labelSmall?.copyWith(
+                  color: theme.hintColor.withOpacity(0.6),
+                  fontWeight: FontWeight.w400,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+ 
 }

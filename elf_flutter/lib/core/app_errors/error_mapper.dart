@@ -1,23 +1,20 @@
-
 import 'dart:io';
 import 'dart:async';
 
 import 'package:elf_flutter/core/app_errors/error.dart';
 
-
 AppError mapError(Object error) {
-
   if (error is SocketException) {
     return const AppError(
       AppErrorType.network,
-      "📡 I can't reach the internet. Please check your connection.",
+      "No internet connection. Please check your network and try again.",
     );
   }
 
   if (error is TimeoutException) {
     return const AppError(
       AppErrorType.timeout,
-      "🐢 The connection is very slow. Please try again.",
+      "The request timed out. Please try again.",
     );
   }
 
@@ -26,19 +23,21 @@ AppError mapError(Object error) {
   if (errorText.contains('429')) {
     return const AppError(
       AppErrorType.rateLimit,
-      "⚠️ I'm getting too many requests right now. Please wait a moment.",
+      "Too many requests. Please wait a moment and try again.",
     );
   }
 
-  if (errorText.contains('500')) {
+  if (errorText.contains('500') ||
+      errorText.contains('502') ||
+      errorText.contains('503')) {
     return const AppError(
       AppErrorType.server,
-      "⚠️ Something went wrong on the server. Please try again.",
+      "Something went wrong on our end. Please try again shortly.",
     );
   }
 
   return const AppError(
     AppErrorType.unknown,
-    "⚠️ Something unexpected happened. Please try again.",
+    "Something unexpected happened. Please try again.",
   );
 }

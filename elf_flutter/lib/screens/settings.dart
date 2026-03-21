@@ -96,7 +96,7 @@ class _SettingsState extends ConsumerState<Settings> {
                           horizontal: 16, vertical: 7),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
-                        color: theme.hintColor
+                        color: theme.hintColor.withOpacity(0.9)
                       ),
                       child: Text(
                         'Sign in with Google',
@@ -342,7 +342,7 @@ class _SettingsState extends ConsumerState<Settings> {
         selected: selected,
         onSelected: (_) => onTap(),
         selectedColor: Colors.white,
-        backgroundColor: Colors.black,
+        backgroundColor:selected? theme.scaffoldBackgroundColor : Colors.black.withOpacity(0.8) ,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         labelStyle: textTheme.labelMedium
             ?.copyWith(color: selected ? Colors.black : Colors.white),
