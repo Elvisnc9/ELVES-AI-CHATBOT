@@ -1,4 +1,3 @@
-import 'package:drawerbehavior/drawerbehavior.dart';
 import 'package:elf_flutter/widgets/ChatScreem/chatShimmer.dart';
 import 'package:elf_flutter/widgets/ChatScreem/typingMarkdownanimation.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +13,6 @@ import 'package:elf_flutter/widgets/ChatScreem/typingdot_indicator.dart';
 import 'package:elf_flutter/widgets/elvesDrawer.dart';
 
 
-
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
 
@@ -23,41 +21,35 @@ class ChatScreen extends ConsumerStatefulWidget {
 }
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
-  late final DrawerScaffoldController drawerController;
+  final ElvesDrawerController _drawerController = ElvesDrawerController();
 
   @override
-  void initState() {
-    super.initState();
-    drawerController = DrawerScaffoldController();
+  void dispose() {
+    _drawerController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return DrawerScaffold(
-      controller: drawerController,
-      drawers: [
-        SideDrawer(
-          color: theme.scaffoldBackgroundColor,
-          percentage: 0.85,
-          degree: 15,
-          drawerWidth: 300,
-          slide: true,
-          alignment: Alignment.topLeft,
-          footerView: DrawerFooter(),
-          child: ElvesDrawer(drawerController: drawerController),
-        ),
+    return Stack(
+      children: [
+        // ── Main chat view ─────────────────────────────────────────────
+        ChatView(drawerController: _drawerController),
+
+        // ── Drawer overlay (sits above chat, below nothing) ────────────
+        ElvesDrawerOverlay(controller: _drawerController),
       ],
-      builder: (context, id) {
-        return ChatView(drawerController: drawerController);
-      },
     );
   }
 }
 
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  CHAT VIEW
+// ─────────────────────────────────────────────────────────────────────────────
+
 class ChatView extends ConsumerStatefulWidget {
-  final DrawerScaffoldController drawerController;
+  final ElvesDrawerController drawerController;
   const ChatView({super.key, required this.drawerController});
 
   @override
@@ -118,13 +110,13 @@ class _ChatViewState extends ConsumerState<ChatView>
     return AnimatedPadding(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOut,
-    
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: SizedBox.expand(
         child: Stack(
           children: [
+            // ── Message list ───────────────────────────────────────────
             Positioned.fill(
               child: AnimatedOpacity(
                 opacity: (hasMessages || isLoadingConversation) ? 1.0 : 0.0,
@@ -163,7 +155,6 @@ class _ChatViewState extends ConsumerState<ChatView>
                                   padding: EdgeInsets.only(
                                     top: 20.h,
                                     bottom: 15.h,
-    
                                     left: 12,
                                     right: 12,
                                   ),
@@ -183,7 +174,8 @@ class _ChatViewState extends ConsumerState<ChatView>
                 ),
               ),
             ),
-    
+
+            // ── Welcome screen ─────────────────────────────────────────
             Positioned.fill(
               child: AnimatedOpacity(
                 opacity: (hasMessages || isLoadingConversation) ? 0.0 : 1.0,
@@ -195,14 +187,16 @@ class _ChatViewState extends ConsumerState<ChatView>
                 ),
               ),
             ),
-    
+
+            // ── Menu bar ──────────────────────────────────────────────
             Positioned(
               top: 3.h,
               left: 0,
               right: 0,
               child: _buildMenuBar(theme),
             ),
-    
+
+            // ── Input bar ─────────────────────────────────────────────
             Positioned(
               bottom: 10,
               left: 0,
@@ -224,7 +218,6 @@ class _ChatViewState extends ConsumerState<ChatView>
           child: Text(
             'How can I help ?',
             textAlign: TextAlign.center,
-
             style: textTheme.displayLarge?.copyWith(fontSize: 32.sp),
           ),
         ).animate().fadeIn().slideX(begin: 0.3),
@@ -232,8 +225,6 @@ class _ChatViewState extends ConsumerState<ChatView>
       ],
     );
   }
-
-
 
   Widget _buildInputBar(ThemeData theme, bool isLoading) {
     final bool isTyping = messages.any(
@@ -320,15 +311,12 @@ class _ChatViewState extends ConsumerState<ChatView>
 
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 250),
-
                     transitionBuilder: (child, animation) =>
                         ScaleTransition(scale: animation, child: child),
                     child: showVoiceButton
                         ? GestureDetector(
                             key: const ValueKey('voice'),
-                            onTap: () {
-                             
-                            },
+                            onTap: () {},
                             child: Padding(
                               padding: const EdgeInsets.only(left: 8),
                               child: Container(
@@ -340,7 +328,6 @@ class _ChatViewState extends ConsumerState<ChatView>
                                 child: Image.asset(
                                   'assets/SoundWaves.png',
                                   color: theme.scaffoldBackgroundColor,
-
                                   width: 25,
                                 ),
                               ),
@@ -388,7 +375,6 @@ class _ChatViewState extends ConsumerState<ChatView>
                         child: !canSend
                             ? Icon(
                                 Icons.stop,
-
                                 size: 30,
                                 color: theme.scaffoldBackgroundColor,
                               )
@@ -418,7 +404,7 @@ class _ChatViewState extends ConsumerState<ChatView>
             icon: const Icon(Icons.menu_outlined, size: 30),
             onPressed: () {
               FocusManager.instance.primaryFocus?.unfocus();
-              widget.drawerController.openDrawer();
+              widget.drawerController.open();
             },
           ),
 
@@ -471,59 +457,57 @@ class _ChatViewState extends ConsumerState<ChatView>
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: isUser ? 1.h : 0),
-      child:
-          Align(
-                alignment: isUser
-                    ? Alignment.centerRight
-                    : Alignment.centerLeft,
-                child: Column(
-                  crossAxisAlignment: isUser
-                      ? CrossAxisAlignment.end
-                      : CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.symmetric(vertical: 6),
-                      padding: const EdgeInsets.all(12),
-                      constraints: BoxConstraints(
-                        maxWidth: isUser ? 75.w : 100.w,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isUser ? theme.canvasColor : Colors.transparent,
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: isAssistant && !isTypingComplete
-                          ? TypingMarkdown(
-                              text: message.text,
-                              textTheme: textTheme,
-                              onCompleted: () {
-                                setState(() {
-                                  message.isTypingComplete = true;
-                                });
-                              },
-                            )
-                          : MarkdownBody(
-                              data: message.text,
-                              styleSheet: MarkdownStyleSheet(
-                                p: textTheme.displayMedium,
-                                strong: textTheme.displayMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+      child: Align(
+            alignment:
+                isUser ? Alignment.centerRight : Alignment.centerLeft,
+            child: Column(
+              crossAxisAlignment: isUser
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
+              children: [
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  padding: const EdgeInsets.all(12),
+                  constraints: BoxConstraints(
+                    maxWidth: isUser ? 75.w : 100.w,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isUser ? theme.canvasColor : Colors.transparent,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: isAssistant && !isTypingComplete
+                      ? TypingMarkdown(
+                          text: message.text,
+                          textTheme: textTheme,
+                          onCompleted: () {
+                            setState(() {
+                              message.isTypingComplete = true;
+                            });
+                          },
+                        )
+                      : MarkdownBody(
+                          data: message.text,
+                          styleSheet: MarkdownStyleSheet(
+                            p: textTheme.displayMedium,
+                            strong: textTheme.displayMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
                             ),
-                    ),
-
-                    if (isAssistant &&
-                        isTypingComplete &&
-                        !message.isError) ...[
-                      const SizedBox(height: 3),
-                      _assistantActionRow(message),
-                    ],
-                  ],
+                          ),
+                        ),
                 ),
-              )
-              .animate()
-              .fadeIn(duration: 200.ms)
-              .slideY(begin: 0.05, duration: 200.ms),
+
+                if (isAssistant &&
+                    isTypingComplete &&
+                    !message.isError) ...[
+                  const SizedBox(height: 3),
+                  _assistantActionRow(message),
+                ],
+              ],
+            ),
+          )
+          .animate()
+          .fadeIn(duration: 200.ms)
+          .slideY(begin: 0.05, duration: 200.ms),
     );
   }
 
@@ -553,4 +537,3 @@ class _ChatViewState extends ConsumerState<ChatView>
     return Icon(icon, size: 18, color: theme.hintColor);
   }
 }
-

@@ -84,7 +84,7 @@ class AppTheme {
     primaryColor: Colors.white,
      progressIndicatorTheme: ProgressIndicatorThemeData(
       color: Colors.black,
-      strokeWidth: 3
+      strokeWidth: 5
      ),
     hintColor: Colors.black,
     dividerColor: Colors.black,

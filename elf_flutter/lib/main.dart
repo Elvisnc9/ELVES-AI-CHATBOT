@@ -47,7 +47,7 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeControllerProvider);
     return AnimatedTheme(
-          duration: const Duration(milliseconds: 500),
+          duration: const Duration(milliseconds: 800),
           curve: Curves.easeIn,
           data: themeMode == ThemeMode.dark
               ? AppTheme.darkTheme
@@ -62,7 +62,7 @@ class MyApp extends ConsumerWidget {
           ),
         )
         .animate(key: ValueKey(themeMode))
-        .fadeIn(duration: const Duration(milliseconds: 500))
+        .fadeIn(duration: const Duration(milliseconds: 900))
         .scale(
           begin: const Offset(0.98, 0.98),
           end: const Offset(1.0, 1.0),

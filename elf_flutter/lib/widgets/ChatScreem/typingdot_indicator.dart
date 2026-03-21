@@ -12,8 +12,8 @@ class ScalingTypingDot extends StatefulWidget {
 
   const ScalingTypingDot({
     super.key,
-    this.dotSize = 20,
-    this.duration = const Duration(milliseconds: 1200),
+    this.dotSize = 25,
+    this.duration = const Duration(milliseconds: 900),
   });
 
   @override
@@ -46,7 +46,7 @@ class _ScalingTypingDotState extends State<ScalingTypingDot>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final scale = 0.7 + (math.sin(_controller.value * math.pi * 2) + 1) / 4;
+        final scale = 0.8 + (math.sin(_controller.value * math.pi * 2) + 1) / 4;
 
         return Transform.scale(
           scale: scale,

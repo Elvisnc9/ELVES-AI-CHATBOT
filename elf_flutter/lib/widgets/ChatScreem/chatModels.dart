@@ -20,7 +20,7 @@ class _PremiumFloatingChipsState extends State<PremiumFloatingChips>
 
   final List<List<String>> data = [
     ["Can you help me debug this code?", "Elon Networth",
-     "What’s a good startup?", "Technnologies"],
+     "What’s a good startup?", "Technologies"],
     ["How do I Create a Startup", "Mathematics",
      "frontend and backend development?", "Iran Bombing"],
   ];
