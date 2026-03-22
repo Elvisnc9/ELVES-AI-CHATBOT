@@ -1,6 +1,7 @@
 import 'package:elf_flutter/widgets/ChatScreem/chatShimmer.dart';
 import 'package:elf_flutter/widgets/ChatScreem/typingMarkdownanimation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -247,7 +248,7 @@ Widget _buildInputBar(ThemeData theme, bool isLoading) {
 
   final isGenerating = chatState.isGenerating;
   final isLoadingConversation = chatState.isLoadingConversation;
-  final bool canSend = !isGenerating && !isTyping;
+  final bool canSend = !isGenerating;
 
   final bool hasText = _textController.text.trim().isNotEmpty;
 
@@ -358,53 +359,54 @@ Widget _buildInputBar(ThemeData theme, bool isLoading) {
 
                 const SizedBox(width: 8),
 
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  transitionBuilder: (child, animation) =>
-                      ScaleTransition(scale: animation, child: child),
-                  child: GestureDetector(
-                    key: ValueKey(!canSend),
-                    onTap: isLoadingConversation
-                        ? null
-                        : () async {
-                            if (!canSend) {
-                              ref.read(chatProvider.notifier).stopGeneration();
-                              return;
-                            }
+GestureDetector(
+  onTap: isLoadingConversation
+      ? null
+      : () async {
+          if (!canSend) {
+            ref.read(chatProvider.notifier).stopGeneration();
+            return;
+          }
 
-                            final text = _textController.text.trim();
-                            if (text.isEmpty) return;
+          final text = _textController.text.trim();
+          if (text.isEmpty) return;
 
-                            _textController.clear();
-                            setState(() {}); // so voice button can return
-                            _focusNode.unfocus();
+          _textController.clear();
+          setState(() {});
+          _focusNode.unfocus();
 
-                            await ref
-                                .read(chatProvider.notifier)
-                                .sendMessage(text);
+          await ref
+              .read(chatProvider.notifier)
+              .sendMessage(text);
 
-                            _smoothScrollToLatest();
-                          },
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: theme.dividerColor,
-                      ),
-                      child: !canSend
-                          ? Icon(
-                              Icons.stop,
-                              size: 30,
-                              color: theme.scaffoldBackgroundColor,
-                            )
-                          : Image.asset(
-                              'assets/send.png',
-                              width: 25,
-                              color: theme.scaffoldBackgroundColor,
-                            ),
-                    ),
-                  ),
-                ),
+          _smoothScrollToLatest();
+        },
+  child: Container(
+    padding: const EdgeInsets.all(8),
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      color: theme.dividerColor,
+    ),
+    child: AnimatedSwitcher(  // ← moved INSIDE container
+      duration: const Duration(milliseconds: 200),
+      transitionBuilder: (child, animation) =>
+          ScaleTransition(scale: animation, child: child),
+      child: !canSend
+          ? Icon(
+              Icons.stop,
+              key: const ValueKey('stop'),
+              size: 30,
+              color: theme.scaffoldBackgroundColor,
+            )
+          : Image.asset(
+              'assets/send.png',
+              key: const ValueKey('send'),
+              width: 25,
+              color: theme.scaffoldBackgroundColor,
+            ),
+    ),
+  ),
+),
               ],
             ),
           ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.2),
@@ -462,6 +464,8 @@ Widget _buildInputBar(ThemeData theme, bool isLoading) {
   Widget _chatBubble(ChatMessage message, {required ValueKey<String> key}) {
     final isUser = message.role == MessageRole.user;
     final isAssistant = message.role == MessageRole.assistant;
+     final isSystem = message.role == MessageRole.system;
+
     final bool isTypingComplete = message.isTypingComplete;
 
     if (message.type == MessageType.typing) {
@@ -488,6 +492,8 @@ Widget _buildInputBar(ThemeData theme, bool isLoading) {
                   ? CrossAxisAlignment.end
                   : CrossAxisAlignment.start,
               children: [
+
+                
                 Container(
                   margin: const EdgeInsets.symmetric(vertical: 6),
                   padding: const EdgeInsets.all(12),
@@ -519,7 +525,7 @@ Widget _buildInputBar(ThemeData theme, bool isLoading) {
                         ),
                 ),
 
-                if (isAssistant &&
+                if (isAssistant || isSystem &&
                     isTypingComplete &&
                     !message.isError) ...[
                   const SizedBox(height: 3),
@@ -535,6 +541,7 @@ Widget _buildInputBar(ThemeData theme, bool isLoading) {
   }
 
   Widget _assistantActionRow(ChatMessage message) {
+     final isLast = messages.first.id == message.id;
     return Padding(
       padding: const EdgeInsets.only(left: 14),
       child: AnimatedOpacity(
@@ -543,13 +550,20 @@ Widget _buildInputBar(ThemeData theme, bool isLoading) {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _actionIcon(Icons.thumb_up_alt_outlined),
-            const SizedBox(width: 16),
-            _actionIcon(Icons.thumb_down_alt_outlined),
-            const SizedBox(width: 16),
-            _actionIcon(Icons.copy_outlined),
-            const SizedBox(width: 16),
-            _actionIcon(Icons.share_outlined),
+            _LikeButton(),
+        const SizedBox(width: 16),
+        _DislikeButton(),
+        const SizedBox(width: 16),
+        _CopyIcon(text: message.text),
+        const SizedBox(width: 16),
+        _actionIcon(Icons.share_outlined),
+        // Regenerate only on the last assistant message
+        if (isLast && !chatState.isGenerating) ...[
+          const SizedBox(width: 16),
+          GestureDetector(
+            onTap: () => ref.read(chatProvider.notifier).regenerateLastResponse(),
+            child: Icon(Icons.refresh_rounded, size: 18, color: theme.hintColor),
+          ),]
           ],
         ),
       ),
@@ -559,6 +573,8 @@ Widget _buildInputBar(ThemeData theme, bool isLoading) {
   Widget _actionIcon(IconData icon) {
     return Icon(icon, size: 18, color: theme.hintColor);
   }
+
+  
 
   Widget _connectionHint(String hint, ThemeData theme) {
   return TweenAnimationBuilder<double>(
@@ -639,3 +655,94 @@ Widget _softErrorBubble(ChatMessage message, ThemeData theme, TextTheme textThem
 }
  
 }
+
+
+class _CopyIcon extends StatefulWidget {
+  final String text;
+  const _CopyIcon({required this.text});
+
+  @override
+  State<_CopyIcon> createState() => _CopyIconState();
+}
+
+class _CopyIconState extends State<_CopyIcon> {
+  bool _copied = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: () async {
+        await Clipboard.setData(ClipboardData(text: widget.text));
+        setState(() => _copied = true);
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) setState(() => _copied = false);
+      },
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: Icon(
+          _copied ? Icons.check_rounded : Icons.copy_outlined,
+          key: ValueKey(_copied),
+          size: 18,
+          color: theme.hintColor,
+        ),
+      ),
+    );
+  }
+}
+
+class _LikeButton extends StatefulWidget {
+  const _LikeButton();
+  @override
+  State<_LikeButton> createState() => _LikeButtonState();
+}
+
+class _LikeButtonState extends State<_LikeButton> {
+  bool _liked = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: () => setState(() => _liked = !_liked),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: Icon(
+          _liked ? Icons.thumb_up_alt : Icons.thumb_up_alt_outlined,
+          key: ValueKey(_liked),
+          size: 18,
+          color:  theme.hintColor ,
+        ),
+      ),
+    );
+  }
+}
+
+class _DislikeButton extends StatefulWidget {
+  const _DislikeButton();
+  @override
+  State<_DislikeButton> createState() => _DislikeButtonState();
+}
+
+class _DislikeButtonState extends State<_DislikeButton> {
+  bool _disliked = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: () => setState(() => _disliked = !_disliked),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: Icon(
+          _disliked ? Icons.thumb_down_alt : Icons.thumb_down_alt_outlined,
+          key: ValueKey(_disliked),
+          size: 18,
+          color: theme.hintColor 
+        ),
+      ),
+    );
+  }
+}
+
+

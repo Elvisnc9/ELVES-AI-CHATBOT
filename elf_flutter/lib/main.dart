@@ -19,7 +19,7 @@ void main() async {
     const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
   );
 
-  const String serverUrl = 'http://192.168.43.54:8080/';
+  const String serverUrl = 'SERVER_URL';
   client = Client(serverUrl)
     ..connectivityMonitor = FlutterConnectivityMonitor()
     ..authSessionManager = FlutterAuthSessionManager();
@@ -28,7 +28,7 @@ void main() async {
 
   // client.auth.initializeGoogleSignIn(
   //   clientId: '',
-  //   serverClientId: '',
+  //   serverClientId: ''
   // );
 
   runApp(
