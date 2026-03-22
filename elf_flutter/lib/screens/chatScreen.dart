@@ -259,159 +259,138 @@ Widget _buildInputBar(ThemeData theme, bool isLoading) {
 
   return Padding(
     padding: const EdgeInsets.all(8.0),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(
-          padding: EdgeInsets.all(1.5.h),
-          decoration: BoxDecoration(
-            color: theme.canvasColor,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.add,
-            color: theme.secondaryHeaderColor,
-            size: 2.5.h,
-          ),
+    child: Expanded(
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 1.2.h,
         ),
-
-        const SizedBox(width: 8),
-
-        Expanded(
-          child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 1.2.h,
-            ),
-            decoration: BoxDecoration(
-              color: theme.canvasColor,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight:
-                          5 *
-                              ((textTheme.labelMedium?.fontSize ?? 14.sp) *
-                                  1.4) +
-                          8,
-                    ),
-                    child: Scrollbar(
-                      child: TextField(
-                        enabled: !isLoading && !isLoadingConversation,
-                        controller: _textController,
-                        focusNode: _focusNode,
-                        cursorColor: theme.hintColor,
-                        keyboardType: TextInputType.multiline,
-                        textInputAction: TextInputAction.newline,
-                        maxLines: 5,
-                        minLines: 1,
-                        autofocus: true,
-                        style: textTheme.labelMedium,
-                        onChanged: (_) {
-                          setState(() {});
-                        },
-                        decoration: InputDecoration(
-                          hintText: 'Ask Anything...',
-                          hintStyle: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.bold,
-                            color: theme.cardColor,
-                          ),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
+        decoration: BoxDecoration(
+          color: theme.canvasColor,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight:
+                      5 *
+                          ((textTheme.labelMedium?.fontSize ?? 14.sp) *
+                              1.4) +
+                      8,
+                ),
+                child: Scrollbar(
+                  child: TextField(
+                    enabled: !isLoading && !isLoadingConversation,
+                    controller: _textController,
+                    focusNode: _focusNode,
+                    cursorColor: theme.hintColor,
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
+                    maxLines: 5,
+                    minLines: 1,
+                    autofocus: true,
+                    style: textTheme.labelMedium,
+                    onChanged: (_) {
+                      setState(() {});
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Ask Anything...',
+                      hintStyle: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.bold,
+                        color: theme.cardColor,
                       ),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
                     ),
                   ),
                 ),
-
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
-                  transitionBuilder: (child, animation) =>
-                      ScaleTransition(scale: animation, child: child),
-                  child: showVoiceButton
-                      ? GestureDetector(
-                          key: const ValueKey('voice'),
-                          onTap: () {},
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: theme.dividerColor,
-                              ),
-                              child: Image.asset(
-                                'assets/SoundWaves.png',
-                                color: theme.scaffoldBackgroundColor,
-                                width: 25,
-                              ),
-                            ),
+              ),
+            ),
+    
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              transitionBuilder: (child, animation) =>
+                  ScaleTransition(scale: animation, child: child),
+              child: GestureDetector(
+                      key: const ValueKey('voice'),
+                      onTap: () {},
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: theme.dividerColor,
                           ),
-                        )
-                      : const SizedBox.shrink(key: ValueKey('no-voice')),
-                ),
-
-                const SizedBox(width: 8),
-
-GestureDetector(
-  onTap: isLoadingConversation
-      ? null
-      : () async {
-          if (!canSend) {
-            ref.read(chatProvider.notifier).stopGeneration();
-            return;
-          }
-
-          final text = _textController.text.trim();
-          if (text.isEmpty) return;
-
-          _textController.clear();
-          setState(() {});
-          _focusNode.unfocus();
-
-          await ref
-              .read(chatProvider.notifier)
-              .sendMessage(text);
-
-          _smoothScrollToLatest();
-        },
-  child: Container(
-    padding: const EdgeInsets.all(8),
-    decoration: BoxDecoration(
-      shape: BoxShape.circle,
-      color: theme.dividerColor,
-    ),
-    child: AnimatedSwitcher(  // ← moved INSIDE container
-      duration: const Duration(milliseconds: 200),
-      transitionBuilder: (child, animation) =>
-          ScaleTransition(scale: animation, child: child),
-      child: !canSend
-          ? Icon(
-              Icons.stop,
-              key: const ValueKey('stop'),
-              size: 30,
-              color: theme.scaffoldBackgroundColor,
-            )
-          : Image.asset(
-              'assets/send.png',
-              key: const ValueKey('send'),
-              width: 25,
-              color: theme.scaffoldBackgroundColor,
+                          child: Image.asset(
+                            'assets/SoundWaves.png',
+                            color: theme.scaffoldBackgroundColor,
+                            width: 25,
+                          ),
+                        ),
+                      ),
+                    )
+                 
             ),
-    ),
-  ),
-),
-              ],
-            ),
-          ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.2),
+    
+            const SizedBox(width: 8),
+    
+    GestureDetector(
+      onTap: isLoadingConversation
+          ? null
+          : () async {
+      if (!canSend) {
+        ref.read(chatProvider.notifier).stopGeneration();
+        return;
+      }
+    
+      final text = _textController.text.trim();
+      if (text.isEmpty) return;
+    
+      _textController.clear();
+      setState(() {});
+      _focusNode.unfocus();
+    
+      await ref
+          .read(chatProvider.notifier)
+          .sendMessage(text);
+    
+      _smoothScrollToLatest();
+    },
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: theme.dividerColor,
         ),
-      ],
+        child: AnimatedSwitcher(  // ← moved INSIDE container
+          duration: const Duration(milliseconds: 200),
+          transitionBuilder: (child, animation) =>
+      ScaleTransition(scale: animation, child: child),
+          child: !canSend
+      ? Icon(
+          Icons.stop,
+          key: const ValueKey('stop'),
+          size: 30,
+          color: theme.scaffoldBackgroundColor,
+        )
+      : Image.asset(
+          'assets/send.png',
+          key: const ValueKey('send'),
+          width: 25,
+          color: theme.scaffoldBackgroundColor,
+        ),
+        ),
+      ),
+    ),
+          ],
+        ),
+      ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.2),
     ),
   );
 }
@@ -571,7 +550,7 @@ GestureDetector(
   }
 
   Widget _actionIcon(IconData icon) {
-    return Icon(icon, size: 18, color: theme.hintColor);
+    return Icon(icon, size: 18, color: theme.shadowColor);
   }
 
   

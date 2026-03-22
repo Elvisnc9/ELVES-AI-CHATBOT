@@ -642,7 +642,6 @@ class _ConvoTileState extends State<_ConvoTile> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w400,
                     fontSize: 15.sp,
                     color: theme.hintColor.withOpacity(0.85),
                   ),
