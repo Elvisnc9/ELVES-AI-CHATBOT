@@ -224,6 +224,67 @@ Three modes supported — **Light**, **Dark**, **System** — persisted across s
 
 Font: **Plus Jakarta Sans** via Google Fonts across all text styles.
 
+---
+---
+## 🔑 Environment Setup
+
+This project requires a `passwords.yaml` file for secrets. This file is **not included in the repo** for security reasons. You must create it manually.
+
+**1. Create the file**
+```bash
+touch elf_server/config/passwords.yaml
+```
+
+**2. Paste this template and fill in your own values**
+```yaml
+shared:
+  mySharedPassword: 'YOUR_SHARED_PASSWORD'
+
+development:
+  database: 'YOUR_DEV_DATABASE_PASSWORD'
+  redis: 'YOUR_DEV_REDIS_PASSWORD'
+  serviceSecret: 'YOUR_DEV_SERVICE_SECRET'
+  geminiApiKey: 'YOUR_GEMINI_API_KEY'
+  emailSecretHashPepper: 'YOUR_DEV_EMAIL_HASH_PEPPER'
+  jwtHmacSha512PrivateKey: 'YOUR_DEV_JWT_PRIVATE_KEY'
+  jwtRefreshTokenHashPepper: 'YOUR_DEV_JWT_REFRESH_PEPPER'
+  googleClientSecret: 'YOUR_GOOGLE_CLIENT_SECRET'
+
+production:
+  database: 'YOUR_PRODUCTION_DATABASE_PASSWORD'
+  serviceSecret: 'YOUR_PRODUCTION_SERVICE_SECRET'
+  geminiApiKey: 'YOUR_GEMINI_API_KEY'
+  emailSecretHashPepper: 'YOUR_PRODUCTION_EMAIL_HASH_PEPPER'
+  jwtHmacSha512PrivateKey: 'YOUR_PRODUCTION_JWT_PRIVATE_KEY'
+  jwtRefreshTokenHashPepper: 'YOUR_PRODUCTION_JWT_REFRESH_PEPPER'
+```
+
+**3. Generate secure random values for each secret**
+```bash
+openssl rand -base64 32
+```
+Run this once per secret and paste the output as the value.
+
+**4. Get your API keys**
+
+| Key | Where to get it |
+|---|---|
+| `geminiApiKey` | [Google AI Studio](https://aistudio.google.com/app/apikey) |
+| `googleClientSecret` | [Google Cloud Console](https://console.cloud.google.com) → APIs & Services → Credentials |
+| `database` | Your PostgreSQL host (local or cloud) |
+| `redis` | Your Redis instance password |
+
+**5. Confirm it is gitignored**
+```bash
+cat elf_server/.gitignore | grep passwords
+```
+You should see `config/passwords.yaml` in the output. If not:
+```bash
+echo "config/passwords.yaml" >> elf_server/.gitignore
+```
+
+> ⚠️ **Never commit this file.** It contains sensitive credentials that give full access to your database, auth system, and APIs.
+
 --
 ## 📱 Screenshots
  
