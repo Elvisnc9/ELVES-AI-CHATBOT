@@ -1,4 +1,4 @@
-# 🤖 Genie — AI Chat Assistant
+#  Elves — AI Chat Assistant
 
 A beautifully crafted, production-grade AI chat application built with Flutter. Genie delivers a smooth, ChatGPT-like experience with local message persistence, smart connection handling, animated UI, and full conversation management.
 
