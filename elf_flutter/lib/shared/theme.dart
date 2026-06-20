@@ -30,7 +30,12 @@ class AppTheme {
         iconSize: WidgetStatePropertyAll(30)
       )
     ),
-
+     textSelectionTheme: TextSelectionThemeData(
+      cursorColor: Colors.white,   
+        // Changes the vertical typing blinking line
+      selectionColor: AppColors.light.withOpacity(0.9),    // Changes the background highlight color when selecting text
+      selectionHandleColor:AppColors.light.withOpacity(0.9) , // Changes the tear-drop handles used to drag and copy text
+    ),
 
     textTheme: TextTheme(
     displayLarge: GoogleFonts.plusJakartaSans(
@@ -108,6 +113,13 @@ class AppTheme {
         iconSize: WidgetStatePropertyAll(30)
       )
     ),
+
+      textSelectionTheme: TextSelectionThemeData(
+      cursorColor: Colors.white,   
+        // Changes the vertical typing blinking line
+      selectionColor: AppColors.light.withOpacity(0.9),    // Changes the background highlight color when selecting text
+      selectionHandleColor:AppColors.light.withOpacity(0.9) , // Changes the tear-drop handles used to drag and copy text
+    ),
      textTheme: TextTheme(
     displayLarge: GoogleFonts.plusJakartaSans(
       fontSize: 24.sp,
@@ -156,7 +168,7 @@ class AppTheme {
      color: AppColors.light.withOpacity(0.95)
     
     ),
-      bodyLarge: GoogleFonts.spaceGrotesk(
+      bodyLarge: GoogleFonts.dancingScript(
       fontSize: 24.sp,
       height: 1.2,
       

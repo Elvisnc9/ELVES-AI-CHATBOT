@@ -11,6 +11,8 @@ import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 import 'package:the_responsive_builder/the_responsive_builder.dart';
 import 'package:elf_flutter/shared/theme.dart';
 
+
+
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -94,14 +96,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       ),
     ];
 
+
+        final textTheme = Theme.of(context).textTheme;
+
+
     return Stack(
       children: [
         Column(
           children: [
             const Spacer(),
-            SizedBox(
+            Center(
               // adjust as needed
-              height: 50.h,
+              
+              child:  SizedBox(
+                height: 30.h,
+                child: Text(
+                  'Elves AI',
+                  textAlign: TextAlign.center,
+                  style: textTheme.bodyLarge?.copyWith(fontSize: 100.sp),
+                ),
+              ),
            
                )
                 .animate()

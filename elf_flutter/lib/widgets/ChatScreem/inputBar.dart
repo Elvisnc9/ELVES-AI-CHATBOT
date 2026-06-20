@@ -77,20 +77,25 @@ class InputBarState extends ConsumerState<InputBar> {
                     enabled: !isLoading && !isLoadingConversation,
                     controller: widget.textController,
                     focusNode: widget.focusNode,
+                     
                     cursorColor: theme.hintColor,
+                     textCapitalization: TextCapitalization.sentences, 
                     keyboardType: TextInputType.multiline,
                     textInputAction: TextInputAction.newline,
+                  cursorHeight: 26.0,
                     maxLines: 5,
                     minLines: 1,
-                    autofocus: true,
-                    style: textTheme.labelMedium,
+                
+                    style: textTheme.labelMedium?.copyWith(fontSize: 18.sp),
                     decoration: InputDecoration(
+                    
                       hintText: 'Ask Anything...',
                       hintStyle: TextStyle(
-                        fontSize: 14.sp,
+                        fontSize: 18.sp,
                         fontWeight: FontWeight.bold,
                         color: theme.cardColor,
                       ),
+                      
                       border: InputBorder.none,
                       isDense: true,
                       contentPadding: EdgeInsets.zero,

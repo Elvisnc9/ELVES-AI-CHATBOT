@@ -11,7 +11,10 @@ import 'package:the_responsive_builder/the_responsive_builder.dart';
 import 'package:elf_flutter/provider/chatState.dart';
 import 'package:elf_flutter/provider/shellView.dart';
 import 'package:elf_flutter/widgets/ChatScreem/typingdot_indicator.dart';
-import 'package:elf_flutter/widgets/elvesDrawer.dart';
+
+
+
+final hasRequestedInitialFocusProvider = StateProvider<bool>((ref) => false);
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  CHAT SCREEN  (shell — owns the drawer only)
@@ -70,19 +73,24 @@ class _ChatViewState extends ConsumerState<ChatView> {
   double _dragStartX = 0;
   double _pageOffsetAtDragStart = 1.0;
  
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // if (mounted) _focusNode.requestFocus();
-    });
-  }
+@override
+void initState() {
+  super.initState();
+  Future.delayed(const Duration(milliseconds: 350), () {
+    if (!mounted) return;
+    final alreadyRequested = ref.read(hasRequestedInitialFocusProvider);
+    if (!alreadyRequested) {
+      ref.read(hasRequestedInitialFocusProvider.notifier).state = true;
+      _focusNode.requestFocus();
+    }
+  });
+}
  
   @override
   void dispose() {
     _textController.dispose();
     _scrollController.dispose();
-    // _focusNode.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
  
