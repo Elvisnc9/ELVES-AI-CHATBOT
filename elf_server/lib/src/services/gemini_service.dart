@@ -1,5 +1,5 @@
-import 'dart:convert';
 import 'dart:async';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 /// A single turn in the conversation history passed from the client.
@@ -25,16 +25,17 @@ class GeminiService {
       'https://generativelanguage.googleapis.com/v1beta';
   static const String _model = 'gemini-2.5-flash';
 
-  // ── PUBLIC ────────────────────────────────────────────────────────────────
+  // ── PUBLIC: STREAMING ────────────────────────────────────────────────────
 
-  /// Sends [userMessage] along with optional [history] (oldest → newest).
-  /// The history should NOT include the current [userMessage] — it is appended
-  /// automatically as the final turn.
-  Future<String> generateContent(
+  /// Streams text tokens from Gemini as they arrive via SSE.
+  ///
+  /// The caller receives individual text chunks (not full sentences).
+  /// The stream closes naturally when Gemini finishes.
+  /// Errors are added to the stream and it is then closed.
+  Stream<String> streamContent(
     String userMessage, {
     List<ChatTurn> history = const [],
-  }) async {
-    // Build the contents array: history turns + the new user message
+  }) async* {
     final contents = [
       ...history.map((t) => t.toGeminiContent()),
       {
@@ -55,12 +56,98 @@ class GeminiService {
       },
       'safetySettings': _safetySettings,
     };
-    return _extractText(await _withRetry(body));
+
+    // Use the streamGenerateContent endpoint with alt=sse
+    final url = Uri.parse(
+      '$_baseUrl/models/$_model:streamGenerateContent?key=$apiKey&alt=sse',
+    );
+
+    late http.StreamedResponse response;
+
+    try {
+      final request = http.Request('POST', url)
+        ..headers['Content-Type'] = 'application/json'
+        ..body = jsonEncode(body);
+
+      response = await request.send().timeout(const Duration(seconds: 30));
+    } on TimeoutException {
+      throw Exception('Connection timed out. Please check your network.');
+    } on http.ClientException catch (e) {
+      throw Exception('Network error: $e');
+    }
+
+    if (response.statusCode == 429) {
+      throw Exception(
+        'Too many requests. Please wait a moment and try again.',
+      );
+    }
+    if (response.statusCode == 403) {
+      throw Exception('API key invalid or no permissions.');
+    }
+    if (response.statusCode != 200) {
+      final body = await response.stream.bytesToString();
+      throw Exception('Gemini HTTP ${response.statusCode}: $body');
+    }
+
+    // SSE stream: each event is a "data: {...json...}" line
+    // We accumulate bytes into lines and parse each SSE event.
+    final buffer = StringBuffer();
+
+    await for (final chunk in response.stream.transform(utf8.decoder)) {
+      buffer.write(chunk);
+
+      // Process all complete lines in the buffer
+      String content = buffer.toString();
+      buffer.clear();
+
+      final lines = content.split('\n');
+
+      // The last element may be an incomplete line — keep it in the buffer
+      for (int i = 0; i < lines.length - 1; i++) {
+        final line = lines[i].trim();
+        if (line.startsWith('data: ')) {
+          final jsonStr = line.substring(6).trim();
+          if (jsonStr.isEmpty || jsonStr == '[DONE]') continue;
+
+          try {
+            final json = jsonDecode(jsonStr) as Map<String, dynamic>;
+            final text = _extractTextFromChunk(json);
+            if (text != null && text.isNotEmpty) {
+              yield text;
+            }
+          } catch (_) {
+            // Malformed chunk — skip silently
+          }
+        }
+      }
+
+      // Keep the incomplete last line in the buffer
+      if (lines.last.isNotEmpty) {
+        buffer.write(lines.last);
+      }
+    }
+
+    // Process any remaining data in the buffer after stream closes
+    final remaining = buffer.toString().trim();
+    if (remaining.startsWith('data: ')) {
+      final jsonStr = remaining.substring(6).trim();
+      if (jsonStr.isNotEmpty && jsonStr != '[DONE]') {
+        try {
+          final json = jsonDecode(jsonStr) as Map<String, dynamic>;
+          final text = _extractTextFromChunk(json);
+          if (text != null && text.isNotEmpty) {
+            yield text;
+          }
+        } catch (_) {}
+      }
+    }
   }
+
+  // ── PUBLIC: TITLE GENERATION (non-streaming, short request) ─────────────
 
   Future<String> generateTitle(String userPrompt, String aiResponse) async {
     final prompt =
-        'Create a chat title of 3 to 6 words for this conversation.\n'
+        'Create a chat title of 5 to 8 words for this conversation.\n'
         'Reply with ONLY the title — no quotes, no punctuation, no explanation.\n\n'
         'User: $userPrompt\n\n'
         'Assistant: $aiResponse';
@@ -75,14 +162,51 @@ class GeminiService {
       ],
       'generationConfig': {
         'temperature': 0.2,
-        'maxOutputTokens': 30,
+        'maxOutputTokens': 40,
         'thinkingConfig': {'thinkingBudget': 0},
       },
     };
+
     return _sanitise(_extractText(await _withRetry(body)));
   }
 
-  // ── RETRY ─────────────────────────────────────────────────────────────────
+  // ── PRIVATE: CHUNK PARSING ───────────────────────────────────────────────
+
+  /// Extracts the text from a single SSE chunk JSON object.
+  /// Returns null if there is no usable text in this chunk.
+  String? _extractTextFromChunk(Map<String, dynamic> json) {
+    // Check for safety block at the prompt level
+    final feedback = json['promptFeedback'] as Map<String, dynamic>?;
+    final blockReason = feedback?['blockReason'] as String?;
+    if (blockReason != null) {
+      throw Exception('Prompt blocked by safety filters: $blockReason');
+    }
+
+    final candidates = json['candidates'] as List<dynamic>?;
+    if (candidates == null || candidates.isEmpty) return null;
+
+    final candidate = candidates[0] as Map<String, dynamic>;
+
+    // Safety block at response level
+    if (candidate['finishReason'] == 'SAFETY') {
+      throw Exception('Response blocked by safety filters.');
+    }
+
+    final parts = (candidate['content'] as Map<String, dynamic>?)?['parts']
+        as List<dynamic>?;
+    if (parts == null || parts.isEmpty) return null;
+
+    for (final part in parts) {
+      final p = part as Map<String, dynamic>?;
+      if (p == null || p['thought'] == true) continue;
+      final text = p['text'] as String?;
+      if (text != null && text.isNotEmpty) return text;
+    }
+
+    return null;
+  }
+
+  // ── RETRY (used only by generateTitle) ──────────────────────────────────
 
   static const List<int> _retryDelays = [5, 20, 40];
 
@@ -94,18 +218,14 @@ class GeminiService {
         final isLastAttempt = i == _retryDelays.length;
         if (isLastAttempt) {
           throw Exception(
-            'Gemini rate limit: all ${_retryDelays.length + 1} attempts failed. '
-            'Please try again in a minute.',
+            'Gemini rate limit: all ${_retryDelays.length + 1} attempts failed.',
           );
         }
-        final wait = _retryDelays[i];
-        await Future<void>.delayed(Duration(seconds: wait));
+        await Future<void>.delayed(Duration(seconds: _retryDelays[i]));
       }
     }
     throw Exception('_withRetry: unreachable');
   }
-
-  // ── HTTP ──────────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>> _rawPost(Map<String, dynamic> body) async {
     final url =
@@ -132,14 +252,10 @@ class GeminiService {
       }
     }
     if (res.statusCode == 429) throw _RateLimitEx();
-    if (res.statusCode == 403) {
-      throw Exception('API key invalid or no permissions');
-    }
+    if (res.statusCode == 403) throw Exception('API key invalid or no permissions');
     if (res.statusCode == 400) throw Exception('Bad request: ${res.body}');
     throw Exception('Gemini HTTP ${res.statusCode}: ${res.body}');
   }
-
-  // ── PARSING ───────────────────────────────────────────────────────────────
 
   String _extractText(Map<String, dynamic> res) {
     final feedback = res['promptFeedback'] as Map<String, dynamic>?;
@@ -192,9 +308,6 @@ class GeminiService {
   ];
 }
 
-/// Private sentinel — only caught inside [GeminiService._withRetry].
 class _RateLimitEx implements Exception {
   const _RateLimitEx();
-  @override
-  String toString() => 'Gemini rate limit hit (429)';
 }

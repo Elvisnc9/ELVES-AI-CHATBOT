@@ -26,22 +26,25 @@ class EndpointChat extends _i1.EndpointRef {
   @override
   String get name => 'chat';
 
+  /// Streams AI response tokens as they arrive from Gemini.
+  ///
   /// [history] is an optional flat list of serialised turns, alternating
   /// user / assistant, oldest first:
-  ///   ["user: hello", "assistant: hi!", "user: how are you?", ...]
+  ///   ["user: hello", "assistant: hi!", ...]
   ///
-  /// The client must NOT include the current [message] in [history] —
-  /// the endpoint appends it automatically.
-  _i2.Future<String> sendMessage(
+  /// The client must NOT include the current [message] in [history].
+  /// Each yielded String is a raw text chunk (not a full sentence).
+  _i2.Stream<String> sendMessage(
     String message, {
     List<String>? history,
-  }) => caller.callServerEndpoint<String>(
+  }) => caller.callStreamingServerEndpoint<_i2.Stream<String>, String>(
     'chat',
     'sendMessage',
     {
       'message': message,
       'history': history,
     },
+    {},
   );
 
   _i2.Future<String> generateTitle(

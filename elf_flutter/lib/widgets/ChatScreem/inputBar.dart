@@ -89,12 +89,12 @@ class InputBarState extends ConsumerState<InputBar> {
                     minLines: 1,
                    autocorrect: true,
                    autofocus: widget.autoFocus ,
-                    style: textTheme.labelMedium?.copyWith(fontSize: 18.sp),
+                    style: textTheme.labelMedium?.copyWith(fontSize: 15.sp),
                     decoration: InputDecoration(
                     
-                      hintText: 'Ask Anything...',
+                      hintText: 'Ask Anything',
                       hintStyle: TextStyle(
-                        fontSize: 18.sp,
+                        fontSize: 15.sp,
                         fontWeight: FontWeight.bold,
                         color: theme.cardColor,
                       ),

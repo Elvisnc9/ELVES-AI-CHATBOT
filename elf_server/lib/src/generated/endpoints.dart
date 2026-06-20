@@ -53,30 +53,6 @@ class Endpoints extends _i1.EndpointDispatch {
       name: 'chat',
       endpoint: endpoints['chat']!,
       methodConnectors: {
-        'sendMessage': _i1.MethodConnector(
-          name: 'sendMessage',
-          params: {
-            'message': _i1.ParameterDescription(
-              name: 'message',
-              type: _i1.getType<String>(),
-              nullable: false,
-            ),
-            'history': _i1.ParameterDescription(
-              name: 'history',
-              type: _i1.getType<List<String>?>(),
-              nullable: true,
-            ),
-          },
-          call:
-              (
-                _i1.Session session,
-                Map<String, dynamic> params,
-              ) async => (endpoints['chat'] as _i2.ChatEndpoint).sendMessage(
-                session,
-                params['message'],
-                history: params['history'],
-              ),
-        ),
         'generateTitle': _i1.MethodConnector(
           name: 'generateTitle',
           params: {
@@ -99,6 +75,33 @@ class Endpoints extends _i1.EndpointDispatch {
                 session,
                 params['userPrompt'],
                 params['aiResponse'],
+              ),
+        ),
+        'sendMessage': _i1.MethodStreamConnector(
+          name: 'sendMessage',
+          params: {
+            'message': _i1.ParameterDescription(
+              name: 'message',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'history': _i1.ParameterDescription(
+              name: 'history',
+              type: _i1.getType<List<String>?>(),
+              nullable: true,
+            ),
+          },
+          streamParams: {},
+          returnType: _i1.MethodStreamReturnType.streamType,
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+                Map<String, Stream> streamParams,
+              ) => (endpoints['chat'] as _i2.ChatEndpoint).sendMessage(
+                session,
+                params['message'],
+                history: params['history'],
               ),
         ),
       },

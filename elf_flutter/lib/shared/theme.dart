@@ -188,7 +188,7 @@ class AppTheme {
 class AppColors {
   static const Color primary = Color(0xFF8E2DE2);
   static const Color light = Color.fromARGB(255, 219, 215, 215);
-  static const Color dark = Color(0xFF100C08);
+  static const Color dark = Color.fromARGB(255, 0, 0, 0);
   static const Color accent = Color(0xFF4A00E0);
 }
 

@@ -31,8 +31,8 @@ class ChatState {
   final String? error;
   final bool isGenerating;
 
-  /// "Thinking…" immediately, swaps to "Slow connection…" at 5s.
-  /// Null when idle or request is done.
+  /// Status hint shown below the typing dot.
+  /// null when idle.
   final String? connectionHint;
 
   const ChatState({
@@ -96,6 +96,34 @@ class ChatMessage {
     this.isRegenerating = false,
     this.hasError = false,
   }) : timestamp = timestamp ?? DateTime.now();
+
+  ChatMessage copyWith({
+    String? id,
+    String? text,
+    MessageRole? role,
+    MessageType? type,
+    bool? isError,
+    DateTime? timestamp,
+    bool? isTypingComplete,
+    bool? isLiked,
+    bool? isCopied,
+    bool? isRegenerating,
+    bool? hasError,
+  }) {
+    return ChatMessage(
+      id: id ?? this.id,
+      text: text ?? this.text,
+      role: role ?? this.role,
+      type: type ?? this.type,
+      isError: isError ?? this.isError,
+      timestamp: timestamp ?? this.timestamp,
+      isTypingComplete: isTypingComplete ?? this.isTypingComplete,
+      isLiked: isLiked ?? this.isLiked,
+      isCopied: isCopied ?? this.isCopied,
+      isRegenerating: isRegenerating ?? this.isRegenerating,
+      hasError: hasError ?? this.hasError,
+    );
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -103,8 +131,15 @@ class ChatMessage {
 // ─────────────────────────────────────────────
 
 const int _historyWindowSize = 10;
-const Duration _slowHintDelay = Duration(seconds: 10);
-const Duration _hardTimeout = Duration(seconds: 40);
+
+/// How long to wait for the FIRST token before showing "Slow connection…"
+const Duration _firstTokenSlowHint = Duration(seconds: 5);
+
+/// How long to wait between tokens mid-stream before showing "Slow connection…"
+const Duration _midStreamSlowHint = Duration(seconds: 8);
+
+/// Hard timeout from the moment the user sends — covers the entire response.
+const Duration _hardTimeout = Duration(seconds: 90);
 
 // ─────────────────────────────────────────────
 //  CHAT NOTIFIER
@@ -113,25 +148,28 @@ const Duration _hardTimeout = Duration(seconds: 40);
 class ChatNotifier extends StateNotifier<ChatState> {
   final Client client;
   final ChatDao chatDao;
+
   String? activeConversationId;
-   bool _cancelled = false;
+  bool _cancelled = false;
+
+  /// Active stream subscription — cancelled when user taps Stop.
+  StreamSubscription<String>? _streamSub;
 
   ChatNotifier(this.client, this.chatDao) : super(const ChatState());
 
   // ═══════════════════════════════════════════
-  //  1. SEND MESSAGE  (new user prompt)
+  //  1. SEND MESSAGE
   // ═══════════════════════════════════════════
 
   Future<void> sendMessage(String userMessage) async {
     if (userMessage.trim().isEmpty) return;
 
-    // Create a new conversation in DB if this is the first message
     if (activeConversationId == null) {
       activeConversationId = DateTime.now().millisecondsSinceEpoch.toString();
       await chatDao.createConversation(
         ConversationsCompanion.insert(
           id: activeConversationId!,
-          title: "New Chat",
+          title: 'New Chat',
           createdAt: DateTime.now(),
           lastActiveAt: DateTime.now(),
         ),
@@ -151,16 +189,14 @@ class ChatNotifier extends StateNotifier<ChatState> {
       type: MessageType.typing,
     );
 
-    // Show user message + typing dot 
     state = state.copyWith(
       messages: [typingMsg, userMsg, ...state.messages],
       isLoading: true,
       isGenerating: true,
+      connectionHint: 'Thinking…',
       error: null,
-      clearHint: false,
     );
 
-    // Persist user message to DB
     await chatDao.saveMessage(
       MessagesCompanion.insert(
         id: userMsg.id,
@@ -171,8 +207,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
       ),
     );
 
-    // Fetch AI response — timers + error handling all live inside here
-    await _fetchAndAppendResponse(
+    await _streamAndAppendResponse(
       userMessage.trim(),
       saveToDb: true,
       runTitleGeneration: true,
@@ -180,19 +215,16 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 
   // ═══════════════════════════════════════════
-  //  2. REGENERATE  (redo last assistant reply)
+  //  2. REGENERATE
   // ═══════════════════════════════════════════
 
   Future<void> regenerateLastResponse() async {
-    // Find the most recent user message
     final lastUserMsg = state.messages.firstWhere(
       (m) => m.role == MessageRole.user && m.type == MessageType.normal,
       orElse: () => throw Exception('No user message to regenerate from'),
     );
 
     final lastUserIndex = state.messages.indexOf(lastUserMsg);
-
-    // Keep user message + everything older, drop last assistant reply
     final trimmed = state.messages.sublist(lastUserIndex);
 
     final typingMsg = ChatMessage(
@@ -206,11 +238,10 @@ class ChatNotifier extends StateNotifier<ChatState> {
       messages: [typingMsg, ...trimmed],
       isLoading: true,
       isGenerating: true,
-      connectionHint: "Thinking…",
-      clearHint: false,
+      connectionHint: 'Thinking…',
     );
 
-    await _fetchAndAppendResponse(
+    await _streamAndAppendResponse(
       lastUserMsg.text,
       saveToDb: false,
       runTitleGeneration: false,
@@ -218,7 +249,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 
   // ═══════════════════════════════════════════
-  //  3. EDIT & RESEND  (inline edit a user msg)
+  //  3. EDIT & RESEND
   // ═══════════════════════════════════════════
 
   Future<void> editAndResend(String messageId, String newText) async {
@@ -228,7 +259,6 @@ class ChatNotifier extends StateNotifier<ChatState> {
     final editedIndex = msgs.indexWhere((m) => m.id == messageId);
     if (editedIndex == -1) return;
 
-    // Keep everything older than the edited message, discard newer
     final older = msgs.sublist(editedIndex + 1);
 
     final newUserMsg = ChatMessage(
@@ -248,11 +278,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
       messages: [typingMsg, newUserMsg, ...older],
       isLoading: true,
       isGenerating: true,
-      connectionHint: "Thinking…",
-      clearHint: false,
+      connectionHint: 'Searching Web',
     );
 
-    // Persist the edited message to DB
     if (activeConversationId != null) {
       await chatDao.saveMessage(
         MessagesCompanion.insert(
@@ -265,7 +293,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
       );
     }
 
-    await _fetchAndAppendResponse(
+    await _streamAndAppendResponse(
       newText.trim(),
       saveToDb: true,
       runTitleGeneration: false,
@@ -273,129 +301,241 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 
   // ═══════════════════════════════════════════
-  //  CORE: FETCH + APPEND AI RESPONSE
-  //  Shared by sendMessage / regenerate / editAndResend
+  //  CORE: STREAM + APPEND RESPONSE
   // ═══════════════════════════════════════════
 
-  Future<void> _fetchAndAppendResponse(
+  Future<void> _streamAndAppendResponse(
     String userMessage, {
     required bool saveToDb,
     required bool runTitleGeneration,
   }) async {
     _cancelled = false;
+
     final history = _buildHistory();
-    bool completed = false;
 
-    // 5s → swap hint to "Slow connection…"
-    final hintTimer = Timer(_slowHintDelay, () {
-      if (!completed && !_cancelled && mounted) {
+    // The streaming assistant message starts empty and grows with each token.
+    // We insert it immediately so the UI can start rendering without a typing dot.
+    final aiMsgId = 'ai-${DateTime.now().millisecondsSinceEpoch}';
+    final aiMsg = ChatMessage(
+      id: aiMsgId,
+      text: '',
+      role: MessageRole.assistant,
+      isTypingComplete: false,
+    );
+
+    // Accumulated response text
+    final responseBuffer = StringBuffer();
+
+    // Whether we have received at least one token
+    bool firstTokenReceived = false;
+
+    // ── Timers ──────────────────────────────────────────────────────────────
+
+    // Fires if first token takes too long
+    Timer? firstTokenTimer;
+    // Fires if no token arrives for a while mid-stream
+    Timer? midStreamTimer;
+    // Hard cutoff for the entire response
+    Timer? hardTimeoutTimer;
+    // Completer that fires when hard timeout hits
+    final hardTimeoutCompleter = Completer<void>();
+
+    void resetMidStreamTimer() {
+      midStreamTimer?.cancel();
+      midStreamTimer = Timer(_midStreamSlowHint, () {
+        if (!_cancelled && mounted) {
+          state = state.copyWith(
+            connectionHint: 'Slow connection ',
+          );
+        }
+      });
+    }
+
+    void cancelAllTimers() {
+      firstTokenTimer?.cancel();
+      midStreamTimer?.cancel();
+      hardTimeoutTimer?.cancel();
+    }
+
+    firstTokenTimer = Timer(_firstTokenSlowHint, () {
+      if (!firstTokenReceived && !_cancelled && mounted) {
         state = state.copyWith(
-          connectionHint: "Slow connection… still working on it",
+          connectionHint: 'Slow connection… waiting for response',
         );
       }
     });
 
-    // 30s → hard timeout via completer
-    final timeoutCompleter = Completer<void>();
-    final hardTimer = Timer(_hardTimeout, () {
-      if (!completed) {
-        timeoutCompleter.completeError(
-          Exception('Request timed out after 30 seconds'),
+    hardTimeoutTimer = Timer(_hardTimeout, () {
+      if (!hardTimeoutCompleter.isCompleted) {
+        hardTimeoutCompleter.completeError(
+          Exception('Request timed out. Please try again.'),
         );
       }
     });
+
+    // ── Helper: update the live AI message in state ──────────────────────
+
+    void pushTokenToState(String newText) {
+      if (!mounted || _cancelled) return;
+
+      final currentMessages = [...state.messages];
+      // Remove typing bubble if it's still there
+      currentMessages.removeWhere((m) => m.type == MessageType.typing);
+
+      final existingIndex =
+          currentMessages.indexWhere((m) => m.id == aiMsgId);
+
+      if (existingIndex == -1) {
+        // First token: insert the ai message bubble
+        state = state.copyWith(
+          messages: [
+            aiMsg.copyWith(text: newText, isTypingComplete: false),
+            ...currentMessages,
+          ],
+          isLoading: false, // input bar re-enables
+          isGenerating: true, // stop button still visible
+          clearHint: true,
+        );
+      } else {
+        // Subsequent tokens: update in place
+        currentMessages[existingIndex] =
+            currentMessages[existingIndex].copyWith(text: newText);
+        state = state.copyWith(
+          messages: currentMessages,
+          isGenerating: true,
+          clearHint: true,
+        );
+      }
+    }
+
+    // ── Subscribe to the stream ───────────────────────────────────────────
+
+    final streamCompleter = Completer<void>();
+
+    _streamSub = client.chat
+        .sendMessage(userMessage, history: history)
+        .listen(
+      (chunk) {
+        if (_cancelled) return;
+
+        if (!firstTokenReceived) {
+          firstTokenReceived = true;
+          firstTokenTimer?.cancel();
+        }
+
+        responseBuffer.write(chunk);
+        resetMidStreamTimer();
+        pushTokenToState(responseBuffer.toString());
+      },
+      onError: (Object error, StackTrace stack) {
+        cancelAllTimers();
+        if (!streamCompleter.isCompleted) {
+          streamCompleter.completeError(error, stack);
+        }
+      },
+      onDone: () {
+        cancelAllTimers();
+        if (!streamCompleter.isCompleted) {
+          streamCompleter.complete();
+        }
+      },
+      cancelOnError: true,
+    );
+
+    // ── Race: stream finishes vs hard timeout ────────────────────────────
 
     try {
-      // Race API call vs hard timeout
-      final aiResponse = await Future.any([
-        client.chat.sendMessage(userMessage, history: history),
-        timeoutCompleter.future.then((_) => ''), // only ever errors, never resolves
+      await Future.any([
+        streamCompleter.future,
+        hardTimeoutCompleter.future,
       ]);
 
-      completed = true;
-      hintTimer.cancel();
-      hardTimer.cancel();
+      if (_cancelled) return;
 
-if (_cancelled) return;
-      // Remove typing bubble
-      final updatedMessages = [...state.messages];
-      updatedMessages.removeWhere((m) => m.type == MessageType.typing);
+      // Stream finished successfully
+      final fullResponse = responseBuffer.toString();
 
-      final aiMsg = ChatMessage(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        text: aiResponse,
-        role: MessageRole.assistant,
-        isTypingComplete: false,
-      );
+      // Mark the message as typing-complete (triggers action row)
+      if (mounted) {
+        final currentMessages = [...state.messages];
+        final idx = currentMessages.indexWhere((m) => m.id == aiMsgId);
+        if (idx != -1) {
+          currentMessages[idx] =
+              currentMessages[idx].copyWith(isTypingComplete: true);
+          state = state.copyWith(
+            messages: currentMessages,
+            isGenerating: false,
+            clearHint: true,
+          );
+        }
+      }
 
-      state = state.copyWith(
-        messages: [aiMsg, ...updatedMessages],
-        isLoading: false,
-        isGenerating: false,
-        clearHint: true,
-      );
-
-      // Persist AI response to DB
-      if (saveToDb && activeConversationId != null) {
+      // Persist to DB
+      if (saveToDb && activeConversationId != null && fullResponse.isNotEmpty) {
         await chatDao.saveMessage(
           MessagesCompanion.insert(
-            id: aiMsg.id,
+            id: aiMsgId,
             conversationId: activeConversationId!,
             role: 'assistant',
-            content: aiResponse,
+            content: fullResponse,
             createdAt: DateTime.now(),
           ),
         );
+        await chatDao.touchConversation(activeConversationId!);
       }
 
-      // Auto-generate conversation title after first exchange
+      // Auto-generate title after first exchange
       if (runTitleGeneration && activeConversationId != null) {
         try {
           final dbMessages =
               await chatDao.getMessages(activeConversationId!);
           final userMessages =
               dbMessages.where((m) => m.role == 'user').toList();
-
           if (userMessages.length == 1) {
             await Future<void>.delayed(const Duration(seconds: 2));
             final title = await client.chat.generateTitle(
               userMessages.first.content,
-              aiResponse,
+              fullResponse,
             );
             await chatDao.updateConversationTitle(
                 activeConversationId!, title);
           }
-        } catch (_) {}
+        } catch (_) {
+          // Title generation is best-effort — never surface to user
+        }
       }
-   } catch (e) {
-  completed = true;
-  hintTimer.cancel();
-  hardTimer.cancel();
+    } catch (error) {
+      cancelAllTimers();
+      await _streamSub?.cancel();
+      _streamSub = null;
 
-if (_cancelled) return;
+      if (_cancelled) return;
+      if (!mounted) return;
 
+      final appError = mapError(error);
 
-  final appError = mapError(e);
+      // Remove typing bubble and the (possibly partial) ai message
+      final updatedMessages = [...state.messages];
+      updatedMessages.removeWhere(
+        (m) => m.type == MessageType.typing || m.id == aiMsgId,
+      );
 
-  // Remove typing bubble but keep all previous messages intact
-  final updatedMessages = [...state.messages];
-  updatedMessages.removeWhere((m) => m.type == MessageType.typing);
+      final errorMsg = ChatMessage(
+        id: 'err-${DateTime.now().millisecondsSinceEpoch}',
+        text: appError.message,
+        role: MessageRole.assistant,
+        isError: true,
+      );
 
-  final errorMsg = ChatMessage(
-    id: DateTime.now().millisecondsSinceEpoch.toString(),
-    text: appError.message,
-    role: MessageRole.assistant,
-    isError: true,
-  );
+      state = state.copyWith(
+        messages: [errorMsg, ...updatedMessages],
+        isLoading: false,
+        isGenerating: false,
+        clearHint: true,
+      );
+    }
 
-  // Return to a fully usable state — user can retry
-  state = state.copyWith(
-    messages: [errorMsg, ...updatedMessages],
-    isLoading: false,
-    isGenerating: false,
-    clearHint: true,
-  );
-}
+    _streamSub = null;
   }
 
   // ═══════════════════════════════════════════
@@ -429,17 +569,24 @@ if (_cancelled) return;
   // ═══════════════════════════════════════════
 
   Future<void> startNewChat() async {
+    await _streamSub?.cancel();
+    _streamSub = null;
+    _cancelled = true;
     activeConversationId = null;
     state = const ChatState();
   }
 
   Future<void> loadConversation(String conversationId) async {
+    await _streamSub?.cancel();
+    _streamSub = null;
+    _cancelled = true;
+
     state = state.copyWith(
       isLoadingConversation: true,
       messages: [],
     );
 
-    await Future.delayed(const Duration(seconds: 1));
+    await Future.delayed(const Duration(milliseconds: 300));
 
     final messages = await chatDao.getMessages(conversationId);
 
@@ -468,19 +615,33 @@ if (_cancelled) return;
   Future<void> deleteConversation(String id) async {
     await chatDao.deleteConversation(id);
     if (activeConversationId == id) {
+      await _streamSub?.cancel();
+      _streamSub = null;
       activeConversationId = null;
       state = const ChatState();
     }
   }
 
   void clearChat() => state = const ChatState();
-
   void clearError() => state = state.copyWith(error: null);
 
   void stopGeneration() {
     _cancelled = true;
+    _streamSub?.cancel();
+    _streamSub = null;
+
     final updatedMessages = [...state.messages];
-  updatedMessages.removeWhere((m) => m.type == MessageType.typing);
+    updatedMessages.removeWhere((m) => m.type == MessageType.typing);
+
+    // Mark the partial message as complete so action row appears
+    final partialIndex = updatedMessages.indexWhere(
+      (m) => m.role == MessageRole.assistant && !m.isTypingComplete,
+    );
+    if (partialIndex != -1) {
+      updatedMessages[partialIndex] =
+          updatedMessages[partialIndex].copyWith(isTypingComplete: true);
+    }
+
     state = state.copyWith(
       messages: updatedMessages,
       isLoading: false,
@@ -492,6 +653,12 @@ if (_cancelled) return;
 
   int get messageCount => state.messages.length;
   bool get isEmpty => state.messages.isEmpty;
+
+  @override
+  void dispose() {
+    _streamSub?.cancel();
+    super.dispose();
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -509,6 +676,4 @@ final conversationsProvider = StreamProvider<List<Conversation>>((ref) {
 });
 
 final chatLoadingProvider = StateProvider<bool>((ref) => false);
-
-// anywhere, e.g. in chatState.dart or its own file
 final inputAutofocusProvider = StateProvider<bool>((ref) => true);

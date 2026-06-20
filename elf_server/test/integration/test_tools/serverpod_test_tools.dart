@@ -176,39 +176,40 @@ class _ChatEndpoint {
 
   final _i2.SerializationManager _serializationManager;
 
-  _i3.Future<String> sendMessage(
+  _i3.Stream<String> sendMessage(
     _i1.TestSessionBuilder sessionBuilder,
     String message, {
     List<String>? history,
-  }) async {
-    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
-      var _localUniqueSession =
-          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
-            endpoint: 'chat',
-            method: 'sendMessage',
-          );
-      try {
-        var _localCallContext = await _endpointDispatch.getMethodCallContext(
-          createSessionCallback: (_) => _localUniqueSession,
-          endpointPath: 'chat',
-          methodName: 'sendMessage',
-          parameters: _i1.testObjectToJson({
-            'message': message,
-            'history': history,
-          }),
-          serializationManager: _serializationManager,
+  }) {
+    var _localTestStreamManager = _i1.TestStreamManager<String>();
+    _i1.callStreamFunctionAndHandleExceptions(
+      () async {
+        var _localUniqueSession =
+            (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+              endpoint: 'chat',
+              method: 'sendMessage',
+            );
+        var _localCallContext = await _endpointDispatch
+            .getMethodStreamCallContext(
+              createSessionCallback: (_) => _localUniqueSession,
+              endpointPath: 'chat',
+              methodName: 'sendMessage',
+              arguments: {
+                'message': message,
+                'history': history,
+              },
+              requestedInputStreams: [],
+              serializationManager: _serializationManager,
+            );
+        await _localTestStreamManager.callStreamMethod(
+          _localCallContext,
+          _localUniqueSession,
+          {},
         );
-        var _localReturnValue =
-            await (_localCallContext.method.call(
-                  _localUniqueSession,
-                  _localCallContext.arguments,
-                )
-                as _i3.Future<String>);
-        return _localReturnValue;
-      } finally {
-        await _localUniqueSession.close();
-      }
-    });
+      },
+      _localTestStreamManager.outputStreamController,
+    );
+    return _localTestStreamManager.outputStreamController.stream;
   }
 
   _i3.Future<String> generateTitle(

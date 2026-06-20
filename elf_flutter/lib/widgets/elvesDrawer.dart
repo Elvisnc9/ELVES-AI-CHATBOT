@@ -12,7 +12,6 @@
 import 'package:elf_flutter/data/database/chat_database.dart';
 import 'package:elf_flutter/provider/auth_state.dart';
 import 'package:elf_flutter/provider/chatState.dart';
-import 'package:elf_flutter/shared/theme.dart';
 import 'package:elf_flutter/provider/shellView.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -262,14 +261,17 @@ class _DrawerPanelState extends ConsumerState<_DrawerPanel> {
         ),
 ),
 
-              SizedBox(height: 3.h),
+              SizedBox(height: 8.h),
 
               Text(
                 'Coversation  History',
                 textAlign: TextAlign.center,
-                style: textTheme.displayLarge?.copyWith(fontSize: 20.sp, ),
+                style: textTheme.displayLarge?.copyWith(fontSize: 20.sp, fontWeight: FontWeight.w600 ),
               ),
 
+
+
+               SizedBox(height: 3.h),
               // ── Conversations list ────────────────────────────────────────
               Expanded(
                 child: filtered.when(
@@ -572,34 +574,45 @@ class _DrawerFooter extends ConsumerWidget {
 
     return Material(
       color: Colors.transparent,
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 1.h, vertical: 1.5.h),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 20,
-              backgroundColor: theme.hintColor,
-              backgroundImage: (imageUrl != null && imageUrl.isNotEmpty)
-                  ? NetworkImage(imageUrl)
-                  : null,
-              child: (imageUrl == null || imageUrl.isEmpty)
-                  ?  Icon(
-                      Icons.person_3_outlined,
-                      color: theme.canvasColor,
-                      size: 25,
-                    )
-                  : null,
-            ),
-            SizedBox(width: 3.w),
-            Expanded(
-              child: Text(
-                displayName,
-                style: textTheme.labelMedium?.copyWith(fontSize: 18.sp),
-                overflow: TextOverflow.ellipsis,
+      child: InkWell(
+        enableFeedback: false,
+        focusColor: Colors.transparent,
+        splashColor: Colors.transparent,
+        onTap: () {
+          onClose();
+          ref.read(shellViewProvider.notifier).state = authState.isAuthenticated
+              ? ShellView.settings
+              : ShellView.onboarding;
+        },
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 1.h, vertical: 1.5.h),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: theme.hintColor,
+                backgroundImage: (imageUrl != null && imageUrl.isNotEmpty)
+                    ? NetworkImage(imageUrl)
+                    : null,
+                child: (imageUrl == null || imageUrl.isEmpty)
+                    ?  Icon(
+                        Icons.person_3_outlined,
+                        color: theme.canvasColor,
+                        size: 25,
+                      )
+                    : null,
               ),
-            ),
-           
-          ],
+              SizedBox(width: 3.w),
+              Expanded(
+                child: Text(
+                  displayName,
+                  style: textTheme.labelMedium?.copyWith(fontSize: 18.sp),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+             
+            ],
+          ),
         ),
       ),
     );
