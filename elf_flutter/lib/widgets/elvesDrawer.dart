@@ -1,3 +1,14 @@
+// elvesDrawer.dart
+//
+// Removed:
+//   • ElvesDrawerController (ChangeNotifier)
+//   • ElvesDrawerOverlay (AnimationController, scrim, Transform.translate)
+//
+// Kept intact:
+//   • All content widgets: _DrawerPanel, _SearchBar, _ConversationGroup,
+//     _ConvoTile, _DrawerFooter, _LeadingItem
+//   • ElvesDrawerPage — the new full-screen page that sits in the PageView
+
 import 'package:elf_flutter/data/database/chat_database.dart';
 import 'package:elf_flutter/provider/auth_state.dart';
 import 'package:elf_flutter/provider/chatState.dart';
@@ -7,83 +18,98 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:the_responsive_builder/the_responsive_builder.dart';
 
-// ─────────────────────────────────────────────
-//  DRAWER CONTROLLER
-//  A simple ValueNotifier so ChatScreen can open/close
-//  the drawer without depending on drawerbehavior.
-// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+//  ELVES DRAWER PAGE
+//  Full-screen page living at index 0 in the AppShell PageView.
+//  Drag-left → peek chat → snap to page 1.
+// ─────────────────────────────────────────────────────────────────────────────
 
-class ElvesDrawerController extends ChangeNotifier {
-  bool _isOpen = false;
-  bool get isOpen => _isOpen;
+class ElvesDrawerPage extends ConsumerStatefulWidget {
+  final PageController pageController;
+  final VoidCallback onClose;
 
-  void open() {
-    _isOpen = true;
-    notifyListeners();
-  }
-
-  void close() {
-    _isOpen = false;
-    notifyListeners();
-  }
-
-  void toggle() {
-    _isOpen = !_isOpen;
-    notifyListeners();
-  }
-}
-
-// ─────────────────────────────────────────────
-//  ELVES DRAWER OVERLAY
-//  Drop this anywhere in a Stack (above the chat body).
-//  It renders its own scrim + slide-in panel.
-// ─────────────────────────────────────────────
-
-class ElvesDrawerOverlay extends ConsumerStatefulWidget {
-  final ElvesDrawerController controller;
-
-  const ElvesDrawerOverlay({super.key, required this.controller});
+  const ElvesDrawerPage({
+    super.key,
+    required this.pageController,
+    required this.onClose,
+  });
 
   @override
-  ConsumerState<ElvesDrawerOverlay> createState() => _ElvesDrawerOverlayState();
+  ConsumerState<ElvesDrawerPage> createState() => _ElvesDrawerPageState();
 }
 
-class _ElvesDrawerOverlayState extends ConsumerState<ElvesDrawerOverlay>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animController;
-  late Animation<double> _slideAnim;
-  late Animation<double> _scrimAnim;
+class _ElvesDrawerPageState extends ConsumerState<ElvesDrawerPage> {
+  // Track the drag start offset so we can compute delta from page-0 edge.
+  double _dragStartX = 0;
+  // Page offset at the moment the drag began (should always be ~0.0 on this page).
+  double _pageOffsetAtDragStart = 0;
 
+  void _onHorizontalDragStart(DragStartDetails details) {
+    _dragStartX = details.globalPosition.dx;
+    _pageOffsetAtDragStart = widget.pageController.page ?? 0.0;
+  }
+
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final dx = details.globalPosition.dx - _dragStartX;
+
+    // Left drag (negative dx) moves toward page 1
+    final newOffset = _pageOffsetAtDragStart - (dx / screenWidth);
+    final clamped = newOffset.clamp(0.0, 1.0);
+    widget.pageController.jumpTo(clamped * screenWidth);
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    final currentPage = widget.pageController.page ?? 0.0;
+    // Progress toward page 1 (0 = fully on drawer, 1 = fully on chat)
+    final progress = currentPage; // page offset in [0,1]
+
+    // Snap to chat if dragged far enough left or flicked left
+    if (velocity < -300 || progress > 0.4) {
+      widget.onClose(); // animateToPage(1)
+    } else {
+      widget.pageController.animateToPage(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onHorizontalDragStart: _onHorizontalDragStart,
+      onHorizontalDragUpdate: _onHorizontalDragUpdate,
+      onHorizontalDragEnd: _onHorizontalDragEnd,
+      child: _DrawerPanel(onClose: widget.onClose),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  DRAWER PANEL  (unchanged content — just extracted from the old overlay)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _DrawerPanel extends ConsumerStatefulWidget {
+  final VoidCallback onClose;
+
+  const _DrawerPanel({required this.onClose});
+
+  @override
+  ConsumerState<_DrawerPanel> createState() => _DrawerPanelState();
+}
+
+class _DrawerPanelState extends ConsumerState<_DrawerPanel> {
   bool _isSearchExpanded = false;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
 
-  // Drawer width when NOT in search mode
-  double get _drawerWidth => MediaQuery.of(context).size.width * 0.80;
-
   @override
   void initState() {
     super.initState();
-
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 280),
-    );
-
-    _slideAnim = CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
-    );
-
-    _scrimAnim = CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOut,
-    );
-
-    widget.controller.addListener(_onControllerChange);
-
     _searchFocusNode.addListener(() {
       if (_searchFocusNode.hasFocus && !_isSearchExpanded) {
         setState(() => _isSearchExpanded = true);
@@ -91,26 +117,11 @@ class _ElvesDrawerOverlayState extends ConsumerState<ElvesDrawerOverlay>
     });
   }
 
-  void _onControllerChange() {
-    if (widget.controller.isOpen) {
-      _animController.forward();
-    } else {
-      _animController.reverse().then((_) {
-        if (mounted) {
-          setState(() {
-            _isSearchExpanded = false;
-            _searchQuery = '';
-            _searchController.clear();
-            _searchFocusNode.unfocus();
-          });
-        }
-      });
-    }
-    setState(() {});
-  }
-
-  void _close() {
-    widget.controller.close();
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
   }
 
   void _collapseSearch() {
@@ -123,111 +134,22 @@ class _ElvesDrawerOverlayState extends ConsumerState<ElvesDrawerOverlay>
   }
 
   @override
-  void dispose() {
-    widget.controller.removeListener(_onControllerChange);
-    _animController.dispose();
-    _searchController.dispose();
-    _searchFocusNode.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    // Don't render at all when fully closed and animation is done
-    if (!widget.controller.isOpen && _animController.isDismissed) {
-      return const SizedBox.shrink();
-    }
-
-    final screenWidth = MediaQuery.of(context).size.width;
-    final theme = Theme.of(context);
-
-    return AnimatedBuilder(
-      animation: _animController,
-      builder: (context, _) {
-        final progress = _slideAnim.value;
-        final panelWidth = _isSearchExpanded ? screenWidth : _drawerWidth;
-        final translateX = -panelWidth + (panelWidth * progress);
-
-        return Stack(
-          children: [
-            // ── Scrim ────────────────────────────────────────────────────
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: _isSearchExpanded ? _collapseSearch : _close,
-                child: Container(
-                  color: Colors.black.withOpacity(0.45 * _scrimAnim.value),
-                ),
-              ),
-            ),
-
-            // ── Drawer Panel ─────────────────────────────────────────────
-            Positioned(
-              top: 0,
-              bottom: 0,
-              left: 0,
-              width: _isSearchExpanded ? screenWidth : _drawerWidth,
-              child: Transform.translate(
-                offset: Offset(translateX, 0),
-                child: _DrawerPanel(
-                  isSearchExpanded: _isSearchExpanded,
-                  searchController: _searchController,
-                  searchFocusNode: _searchFocusNode,
-                  searchQuery: _searchQuery,
-                  onSearchChanged: (q) => setState(() => _searchQuery = q),
-                  onSearchTap: () => setState(() => _isSearchExpanded = true),
-                  onCollapseSearch: _collapseSearch,
-                  onClose: _close,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-//  DRAWER PANEL (the actual content)
-// ─────────────────────────────────────────────
-
-class _DrawerPanel extends ConsumerWidget {
-  final bool isSearchExpanded;
-  final TextEditingController searchController;
-  final FocusNode searchFocusNode;
-  final String searchQuery;
-  final ValueChanged<String> onSearchChanged;
-  final VoidCallback onSearchTap;
-  final VoidCallback onCollapseSearch;
-  final VoidCallback onClose;
-
-  const _DrawerPanel({
-    required this.isSearchExpanded,
-    required this.searchController,
-    required this.searchFocusNode,
-    required this.searchQuery,
-    required this.onSearchChanged,
-    required this.onSearchTap,
-    required this.onCollapseSearch,
-    required this.onClose,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final conversationsAsync = ref.watch(conversationsProvider);
 
     // Filter conversations by search query
     final filtered = conversationsAsync.whenData(
-      (list) => searchQuery.isEmpty
+      (list) => _searchQuery.isEmpty
           ? list
           : list
-                .where(
-                  (c) =>
-                      c.title.toLowerCase().contains(searchQuery.toLowerCase()),
-                )
-                .toList(),
+              .where(
+                (c) => c.title
+                    .toLowerCase()
+                    .contains(_searchQuery.toLowerCase()),
+              )
+              .toList(),
     );
 
     return Container(
@@ -238,22 +160,26 @@ class _DrawerPanel extends ConsumerWidget {
           children: [
             // ── Top bar ──────────────────────────────────────────────────
             Padding(
-              padding: EdgeInsets.only(top: 1.h, bottom: 1.h, right: 0.4.w , left: 1.h),
+              padding: EdgeInsets.only(
+                top: 1.h,
+                bottom: 1.h,
+                right: 0.4.w,
+                left: 1.h,
+              ),
               child: Row(
                 children: [
                   Expanded(
                     child: _SearchBar(
-                      controller: searchController,
-                      focusNode: searchFocusNode,
-                      onTap: onSearchTap,
-                      onChanged: onSearchChanged,
-                      isExpanded: isSearchExpanded,
+                      controller: _searchController,
+                      focusNode: _searchFocusNode,
+                      onTap: () => setState(() => _isSearchExpanded = true),
+                      onChanged: (q) => setState(() => _searchQuery = q),
+                      isExpanded: _isSearchExpanded,
                     ),
                   ),
-
-                  if (isSearchExpanded) ...[
+                  if (_isSearchExpanded) ...[
                     GestureDetector(
-                      onTap: onCollapseSearch,
+                      onTap: _collapseSearch,
                       child: Icon(
                         Icons.cancel,
                         color: theme.hintColor,
@@ -263,7 +189,7 @@ class _DrawerPanel extends ConsumerWidget {
                   ] else ...[
                     GestureDetector(
                       onTap: () {
-                        onClose();
+                        widget.onClose();
                         ref.read(chatProvider.notifier).startNewChat();
                       },
                       child: Icon(
@@ -272,7 +198,6 @@ class _DrawerPanel extends ConsumerWidget {
                         size: 28,
                       ),
                     ),
-                    
                   ],
                   SizedBox(width: 2.w),
                 ],
@@ -280,7 +205,7 @@ class _DrawerPanel extends ConsumerWidget {
             ),
 
             // ── Section links (hidden in search mode) ───────────────────
-            if (!isSearchExpanded) ...[
+            if (!_isSearchExpanded) ...[
               _LeadingItem(
                 icon: Icons.image_outlined,
                 text: 'Images',
@@ -304,7 +229,6 @@ class _DrawerPanel extends ConsumerWidget {
               SizedBox(height: 1.h),
             ],
 
-            // ── Search bar ───────────────────────────────────────────────
             SizedBox(height: 1.h),
 
             // ── Conversations list ────────────────────────────────────────
@@ -316,12 +240,13 @@ class _DrawerPanel extends ConsumerWidget {
                       child: Padding(
                         padding: EdgeInsets.symmetric(vertical: 5.h),
                         child: Text(
-                          searchQuery.isEmpty
+                          _searchQuery.isEmpty
                               ? 'No conversations yet'
-                              : 'No results for "$searchQuery"',
+                              : 'No results for "$_searchQuery"',
                           style: textTheme.labelSmall?.copyWith(
                             fontSize: 15.sp,
-                            color: theme.secondaryHeaderColor.withOpacity(0.3),
+                            color:
+                                theme.secondaryHeaderColor.withOpacity(0.3),
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -329,7 +254,6 @@ class _DrawerPanel extends ConsumerWidget {
                     );
                   }
 
-                  // Group by time
                   final groups = _groupConversations(conversations);
 
                   return ListView.builder(
@@ -341,7 +265,7 @@ class _DrawerPanel extends ConsumerWidget {
                         label: group.label,
                         conversations: group.items,
                         onTap: (convo) {
-                          onClose();
+                          widget.onClose();
                           ref
                               .read(chatProvider.notifier)
                               .loadConversation(convo.id);
@@ -351,23 +275,25 @@ class _DrawerPanel extends ConsumerWidget {
                           ref,
                           convo.id,
                           convo.title,
-                        
-                          
                         ),
                       );
                     },
                   );
                 },
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () =>
+                    const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(
-                  child: Text('Failed to load', style: textTheme.labelSmall),
+                  child: Text(
+                    'Failed to load',
+                    style: textTheme.labelSmall,
+                  ),
                 ),
               ),
             ),
 
             // ── Footer ───────────────────────────────────────────────────
             const Divider(height: 1, thickness: 0.3),
-            _DrawerFooter(onClose: onClose),
+            _DrawerFooter(onClose: widget.onClose),
           ],
         ),
       ),
@@ -425,7 +351,8 @@ class _DrawerPanel extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: theme.scaffoldBackgroundColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Delete conversation?',
           style: theme.textTheme.displayMedium,
@@ -445,7 +372,8 @@ class _DrawerPanel extends ConsumerWidget {
             onPressed: () => Navigator.of(ctx).pop(true),
             child: Text(
               'Delete',
-              style: theme.textTheme.labelMedium?.copyWith(color: Colors.red),
+              style: theme.textTheme.labelMedium
+                  ?.copyWith(color: Colors.red),
             ),
           ),
         ],
@@ -458,7 +386,7 @@ class _DrawerPanel extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────
-//  SEARCH BAR
+//  SEARCH BAR  (unchanged)
 // ─────────────────────────────────────────────
 
 class _SearchBar extends StatelessWidget {
@@ -541,7 +469,7 @@ class _SearchBar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-//  CONVERSATION GROUP (with time label)
+//  CONVERSATION GROUP  (unchanged)
 // ─────────────────────────────────────────────
 
 class _ConvoGroup {
@@ -668,7 +596,7 @@ class _ConvoTileState extends State<_ConvoTile> {
 }
 
 // ─────────────────────────────────────────────
-//  DRAWER FOOTER
+//  DRAWER FOOTER  (unchanged)
 // ─────────────────────────────────────────────
 
 class _DrawerFooter extends ConsumerWidget {
@@ -693,11 +621,9 @@ class _DrawerFooter extends ConsumerWidget {
         borderRadius: BorderRadius.circular(12),
         onTap: () {
           onClose();
-            ref
-                .read(shellViewProvider.notifier)
-                .state = authState.isAuthenticated
-                ? ShellView.settings
-                : ShellView.onboarding;
+          ref.read(shellViewProvider.notifier).state = authState.isAuthenticated
+              ? ShellView.settings
+              : ShellView.onboarding;
         },
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 2.h, vertical: 1.5.h),
@@ -739,7 +665,7 @@ class _DrawerFooter extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────
-//  LEADING ITEM (top nav links)
+//  LEADING ITEM  (unchanged)
 // ─────────────────────────────────────────────
 
 class _LeadingItem extends StatelessWidget {
@@ -786,24 +712,39 @@ class _LeadingItem extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-//  BACKWARD COMPAT  (keep old exports alive)
+//  BACKWARD COMPAT SHIMS
+//  Keep these until you've cleaned up old imports.
 // ─────────────────────────────────────────────
 
-/// Kept so nothing else breaks – you can remove once you've
-/// cleaned up old import sites.
+/// Legacy stub — safe to delete once no other file imports it.
+class ElvesDrawerController extends ChangeNotifier {
+  void open() {}
+  void close() {}
+  void toggle() {}
+}
+
+/// Legacy stub — safe to delete once no other file imports it.
+class ElvesDrawerOverlay extends StatelessWidget {
+  final ElvesDrawerController controller;
+  const ElvesDrawerOverlay({super.key, required this.controller});
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
+}
+
+/// Legacy stub — safe to delete once no other file imports it.
 class ElvesDrawer extends ConsumerWidget {
   final ElvesDrawerController drawerController;
   const ElvesDrawer({super.key, required this.drawerController});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) =>
-      ElvesDrawerOverlay(controller: drawerController);
+  Widget build(BuildContext context, WidgetRef ref) => const SizedBox.shrink();
 }
 
+/// Legacy stub — safe to delete once no other file imports it.
 class DrawerFooter extends ConsumerWidget {
   const DrawerFooter({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) =>
-      _DrawerFooter(onClose: () {});
+  Widget build(BuildContext context, WidgetRef ref) => const SizedBox.shrink();
 }

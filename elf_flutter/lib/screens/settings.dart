@@ -2,7 +2,6 @@ import 'package:elf_flutter/provider/auth_state.dart';
 import 'package:elf_flutter/shared/theme.dart';
 import 'package:elf_flutter/provider/shellView.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:the_responsive_builder/the_responsive_builder.dart';
 
@@ -25,8 +24,7 @@ class _SettingsState extends ConsumerState<Settings> {
     final authState = ref.watch(authProvider);
     final userProfile = authState.userProfile;
 
-    final displayName =
-        userProfile?.fullName ?? userProfile?.userName ?? 'Guest';
+    final String displayName =  userProfile?.userName ?? 'Elvis Ngwu' ;
     final email = userProfile?.email ?? '';
     final imageUrl = userProfile?.imageUrl?.toString();
 
@@ -48,30 +46,16 @@ class _SettingsState extends ConsumerState<Settings> {
           Center(
             child: Column(
               children: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    CircleAvatar(
-                      radius: 52,
-                      backgroundColor: theme.canvasColor,
-                      child: ClipOval(
-                        child: SizedBox(
-                          width: 104,
-                          height: 104,
-                          child: _profileImage(imageUrl),
-                        ),
-                      ),
+                CircleAvatar(
+                  radius: 52,
+                  backgroundColor: theme.canvasColor,
+                  child: ClipOval(
+                    child: SizedBox(
+                      width: 104,
+                      height: 104,
+                      child: _profileImage(imageUrl),
                     ),
-                    Positioned(
-                      right: -4,
-                      bottom: -4,
-                      child: CircleAvatar(
-                        radius: 16,
-                        backgroundColor: theme.canvasColor,
-                        child: const Icon(Icons.edit, size: 16),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(displayName, style: textTheme.labelMedium),
@@ -85,27 +69,8 @@ class _SettingsState extends ConsumerState<Settings> {
                     ),
                   ),
                 // Sign-in prompt for guests
-                if (!authState.isAuthenticated) ...[
-                  const SizedBox(height: 10),
-                  GestureDetector(
-                    onTap: () => ref
-                        .read(shellViewProvider.notifier)
-                        .state = ShellView.onboarding,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 7),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        color: theme.hintColor.withOpacity(0.9)
-                      ),
-                      child: Text(
-                        'Sign in with Google',
-                        style:
-                            textTheme.labelSmall?.copyWith(color: theme.scaffoldBackgroundColor),
-                      ),
-                    ),
-                  ),
-                ],
+               
+                
               ],
             ),
           ),
@@ -151,7 +116,7 @@ class _SettingsState extends ConsumerState<Settings> {
                 ),
               ],
             ),
-          ).animate().fadeIn().slideX(begin: -0.3),
+          ),
 
           SizedBox(height: 2.h),
 
@@ -180,7 +145,7 @@ class _SettingsState extends ConsumerState<Settings> {
                 ),
               ],
             ),
-          ).animate().fadeIn().slideX(begin: 0.3),
+          ),
 
           SizedBox(height: 2.h),
 
@@ -213,7 +178,7 @@ class _SettingsState extends ConsumerState<Settings> {
                     onTap: () {}),
               ],
             ),
-          ).animate().fadeIn().slideY(begin: 0.3),
+          ),
 
           SizedBox(height: 2.h),
 

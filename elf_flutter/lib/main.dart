@@ -28,7 +28,7 @@ void main() async {
 
   client.auth.initializeGoogleSignIn(
     clientId: '',
-    serverClientId: ''
+    serverClientId: '1015868175289-t9l5rfde2v6ucb32bftoe7oimb7hbdtb.apps.googleusercontent.com'
   );
 
   runApp(
