@@ -46,14 +46,14 @@ class ChatEndpoint extends Endpoint {
     session.log('Streaming complete');
   }
 
-  // ── generateTitle (non-streaming, unchanged) ─────────────────────────────
+  // ── generateTitle (single prompt/response pair — kept for compatibility) ─
 
   Future<String> generateTitle(
     Session session,
     String userPrompt,
     String aiResponse,
   ) async {
-    session.log('Generating conversation title…');
+    session.log('Generating conversation title (single exchange)…');
 
     try {
       if (userPrompt.trim().isEmpty || aiResponse.trim().isEmpty) {
@@ -75,6 +75,45 @@ class ChatEndpoint extends Endpoint {
         level: LogLevel.error,
       );
       return 'New Chat';
+    }
+  }
+
+  // ── generateTitleFromHistory (anchor + recent window) ────────────────────
+
+  /// Generates/refreshes a conversation title from a window of messages.
+  ///
+  /// [turns] is a flat list of serialised turns, oldest first, in the same
+  /// "role: text" format used by [sendMessage]'s [history] parameter — e.g.
+  /// the first exchange (anchor) followed by the most recent N messages.
+  ///
+  /// Returns null (rather than a fallback string) if generation fails, so
+  /// the caller can decide to keep the existing title and retry later
+  /// instead of overwriting a good title with "New Chat".
+  Future<String?> generateTitleFromHistory(
+    Session session,
+    List<String> turns,
+  ) async {
+    session.log('Generating conversation title (${turns.length} turns)…');
+
+    final parsed = _parseTurns(turns);
+    if (parsed.isEmpty) return null;
+
+    try {
+      final geminiService = _buildService(session);
+      final title = await geminiService.generateTitleFromTurns(parsed);
+
+      if (title.isEmpty || title.split(' ').length > 10) {
+        return null;
+      }
+
+      session.log('Title generated: "$title"');
+      return title;
+    } catch (e, stackTrace) {
+      session.log(
+        'Checkpoint title generation failed: $e\n$stackTrace',
+        level: LogLevel.error,
+      );
+      return null;
     }
   }
 

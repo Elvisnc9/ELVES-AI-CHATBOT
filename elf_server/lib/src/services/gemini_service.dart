@@ -145,12 +145,33 @@ class GeminiService {
 
   // ── PUBLIC: TITLE GENERATION (non-streaming, short request) ─────────────
 
-  Future<String> generateTitle(String userPrompt, String aiResponse) async {
+  /// Generates a short title from a single prompt/response pair.
+  /// Kept for backward compatibility — delegates to [generateTitleFromTurns].
+  Future<String> generateTitle(String userPrompt, String aiResponse) {
+    return generateTitleFromTurns([
+      ChatTurn(role: 'user', text: userPrompt),
+      ChatTurn(role: 'model', text: aiResponse),
+    ]);
+  }
+
+  /// Generates a short title from an arbitrary list of turns.
+  ///
+  /// Used both for the initial title (first exchange) and for periodic
+  /// checkpoint updates (anchor exchange + a window of recent messages).
+  /// Turns are rendered in order as "User: ..." / "Assistant: ..." lines.
+  Future<String> generateTitleFromTurns(List<ChatTurn> turns) async {
+    if (turns.isEmpty) return 'New Chat';
+
+    final transcript = turns.map((t) {
+      final label = t.role == 'user' ? 'User' : 'Assistant';
+      return '$label: ${t.text}';
+    }).join('\n\n');
+
     final prompt =
-        'Create a chat title of 5 to 8 words for this conversation.\n'
+        'Create a chat title of 5 to 8 words that reflects the overall '
+        'topic of this conversation so far.\n'
         'Reply with ONLY the title — no quotes, no punctuation, no explanation.\n\n'
-        'User: $userPrompt\n\n'
-        'Assistant: $aiResponse';
+        '$transcript';
 
     final body = {
       'contents': [

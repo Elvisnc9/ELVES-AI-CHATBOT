@@ -1,6 +1,7 @@
 chat:
   - sendMessage:
   - generateTitle:
+  - generateTitleFromHistory:
 googleIdp:
   - login:
   - hasAccount:

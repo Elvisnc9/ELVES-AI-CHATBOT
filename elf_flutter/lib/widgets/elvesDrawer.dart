@@ -156,7 +156,7 @@ class _DrawerPanelState extends ConsumerState<_DrawerPanel> {
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: 2.h,
-            vertical: 2.h,
+            vertical: _isSearching ? 2.h : 3.h,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,9 +260,8 @@ class _DrawerPanelState extends ConsumerState<_DrawerPanel> {
           ],
         ),
 ),
-
-              SizedBox(height: 8.h),
-
+             
+                 SizedBox(height: _isSearching? 4.h : 8.h),
               Text(
                 'Coversation  History',
                 textAlign: TextAlign.center,

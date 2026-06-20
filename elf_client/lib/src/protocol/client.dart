@@ -58,6 +58,22 @@ class EndpointChat extends _i1.EndpointRef {
       'aiResponse': aiResponse,
     },
   );
+
+  /// Generates/refreshes a conversation title from a window of messages.
+  ///
+  /// [turns] is a flat list of serialised turns, oldest first, in the same
+  /// "role: text" format used by [sendMessage]'s [history] parameter — e.g.
+  /// the first exchange (anchor) followed by the most recent N messages.
+  ///
+  /// Returns null (rather than a fallback string) if generation fails, so
+  /// the caller can decide to keep the existing title and retry later
+  /// instead of overwriting a good title with "New Chat".
+  _i2.Future<String?> generateTitleFromHistory(List<String> turns) =>
+      caller.callServerEndpoint<String?>(
+        'chat',
+        'generateTitleFromHistory',
+        {'turns': turns},
+      );
 }
 
 /// {@category Endpoint}

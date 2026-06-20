@@ -141,6 +141,14 @@ const Duration _midStreamSlowHint = Duration(seconds: 8);
 /// Hard timeout from the moment the user sends — covers the entire response.
 const Duration _hardTimeout = Duration(seconds: 90);
 
+/// Title checkpoints fire every time the total message count (user +
+/// assistant) crosses a multiple of this number — 10, 20, 30, ...
+const int _titleCheckpointInterval = 10;
+
+/// How many of the most-recent messages to send (in addition to the
+/// anchor exchange) when refreshing a title at a checkpoint.
+const int _titleRecentWindow = 12;
+
 // ─────────────────────────────────────────────
 //  CHAT NOTIFIER
 // ─────────────────────────────────────────────
@@ -151,6 +159,19 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
   String? activeConversationId;
   bool _cancelled = false;
+
+  /// Whether a title has ever been successfully generated for the
+  /// *current* conversation. While false, we keep retrying title
+  /// generation on every successful exchange (covers the case where the
+  /// very first message errored out and left the conversation titleless).
+  /// Once true, we settle into the fixed checkpoint cadence below.
+  bool _hasSuccessfulTitle = false;
+
+  /// The last message-count checkpoint (multiple of
+  /// [_titleCheckpointInterval]) we attempted a title refresh at, for the
+  /// current conversation. Prevents re-firing repeatedly inside the same
+  /// window if multiple messages land before the count moves on.
+  int _lastTitleCheckpoint = 0;
 
   /// Active stream subscription — cancelled when user taps Stop.
   StreamSubscription<String>? _streamSub;
@@ -166,6 +187,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
     if (activeConversationId == null) {
       activeConversationId = DateTime.now().millisecondsSinceEpoch.toString();
+      _hasSuccessfulTitle = false;
+      _lastTitleCheckpoint = 0;
       await chatDao.createConversation(
         ConversationsCompanion.insert(
           id: activeConversationId!,
@@ -244,7 +267,10 @@ class ChatNotifier extends StateNotifier<ChatState> {
     await _streamAndAppendResponse(
       lastUserMsg.text,
       saveToDb: false,
-      runTitleGeneration: false,
+      // Regenerating doesn't add a new message to the DB count, but a
+      // checkpoint could still be due from earlier messages — let the
+      // checkpoint check run anyway, it's cheap and self-guarding.
+      runTitleGeneration: true,
     );
   }
 
@@ -296,7 +322,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
     await _streamAndAppendResponse(
       newText.trim(),
       saveToDb: true,
-      runTitleGeneration: false,
+      runTitleGeneration: true,
     );
   }
 
@@ -484,25 +510,15 @@ class ChatNotifier extends StateNotifier<ChatState> {
         await chatDao.touchConversation(activeConversationId!);
       }
 
-      // Auto-generate title after first exchange
+      // Title generation / refresh — only after a *successful* exchange.
+      // This is the only place title logic runs, which is exactly what
+      // fixes the "errored first message" bug: an error short-circuits
+      // before this point (see catch block below), so it's never
+      // mistaken for a completed title attempt, and the next successful
+      // exchange will naturally retry it.
       if (runTitleGeneration && activeConversationId != null) {
-        try {
-          final dbMessages =
-              await chatDao.getMessages(activeConversationId!);
-          final userMessages =
-              dbMessages.where((m) => m.role == 'user').toList();
-          if (userMessages.length == 1) {
-            await Future<void>.delayed(const Duration(seconds: 2));
-            final title = await client.chat.generateTitle(
-              userMessages.first.content,
-              fullResponse,
-            );
-            await chatDao.updateConversationTitle(
-                activeConversationId!, title);
-          }
-        } catch (_) {
-          // Title generation is best-effort — never surface to user
-        }
+        // Don't let title generation block the UI or the next message.
+        unawaited(_maybeUpdateTitle(activeConversationId!));
       }
     } catch (error) {
       cancelAllTimers();
@@ -533,9 +549,97 @@ class ChatNotifier extends StateNotifier<ChatState> {
         isGenerating: false,
         clearHint: true,
       );
+
+      // No title work happens here — by design. The conversation keeps
+      // whatever title it had (likely the "New Chat" placeholder if this
+      // was the first message), and the next *successful* exchange will
+      // pick up title generation again via _maybeUpdateTitle.
     }
 
     _streamSub = null;
+  }
+
+  // ═══════════════════════════════════════════
+  //  TITLE CHECKPOINT LOGIC
+  // ═══════════════════════════════════════════
+
+  /// Decides whether a title should be (re)generated right now, and does
+  /// so if appropriate. Safe to call after every successful exchange —
+  /// it's a no-op most of the time.
+  ///
+  /// Rules:
+  /// - If no title has ever successfully been generated for this
+  ///   conversation, attempt one now using the first exchange. If it
+  ///   fails (network/server error), just leave the placeholder title in
+  ///   place — the very next successful exchange will try again.
+  /// - Once a title exists, only attempt a refresh when the total
+  ///   message count (user + assistant) has crossed a new multiple of
+  ///   [_titleCheckpointInterval] (10, 20, 30, ...). The refresh uses the
+  ///   first exchange (anchor) plus the newest [_titleRecentWindow]
+  ///   messages, so the title can track topic drift without re-reading
+  ///   the entire conversation every time.
+  /// - A failed checkpoint refresh is silently skipped; the existing
+  ///   title is kept and the next checkpoint will try again.
+  Future<void> _maybeUpdateTitle(String conversationId) async {
+    try {
+      final count = await chatDao.getMessageCount(conversationId);
+      if (count == 0) return;
+
+      if (!_hasSuccessfulTitle) {
+        // Keep retrying on every successful exchange until one lands.
+        final messages = await chatDao.getTitleWindow(
+          conversationId,
+          recentWindow: _titleRecentWindow,
+        );
+        final turns = _toTurnStrings(messages);
+        final title = await client.chat.generateTitleFromHistory(turns);
+
+        if (title != null && title.trim().isNotEmpty) {
+          await chatDao.updateConversationTitle(conversationId, title.trim());
+          _hasSuccessfulTitle = true;
+          // Treat the checkpoint we just satisfied as "consumed" so we
+          // don't immediately re-fire again a message or two later.
+          _lastTitleCheckpoint =
+              (count ~/ _titleCheckpointInterval) * _titleCheckpointInterval;
+        }
+        // On failure: do nothing. Next successful exchange retries.
+        return;
+      }
+
+      // Title already exists — only act on fresh checkpoint crossings.
+      final checkpoint =
+          (count ~/ _titleCheckpointInterval) * _titleCheckpointInterval;
+      if (checkpoint <= _lastTitleCheckpoint || checkpoint == 0) {
+        return;
+      }
+
+      final messages = await chatDao.getTitleWindow(
+        conversationId,
+        recentWindow: _titleRecentWindow,
+      );
+      final turns = _toTurnStrings(messages);
+      final title = await client.chat.generateTitleFromHistory(turns);
+
+      if (title != null && title.trim().isNotEmpty) {
+        await chatDao.updateConversationTitle(conversationId, title.trim());
+        _lastTitleCheckpoint = checkpoint;
+      }
+      // On failure: leave _lastTitleCheckpoint as-is so the *next*
+      // checkpoint (e.g. 20 after a missed 10) is still attempted — we
+      // don't want one bad network blip to permanently silence updates.
+    } catch (_) {
+      // Title generation/refresh is always best-effort — never surface
+      // failures to the user.
+    }
+  }
+
+  /// Converts saved DB messages into the "role: text" flat string format
+  /// the chat endpoint already expects for history/title turns.
+  List<String> _toTurnStrings(List<Message> messages) {
+    return messages.map((m) {
+      final prefix = m.role == 'user' ? 'user' : 'assistant';
+      return '$prefix: ${m.content}';
+    }).toList();
   }
 
   // ═══════════════════════════════════════════
@@ -573,6 +677,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
     _streamSub = null;
     _cancelled = true;
     activeConversationId = null;
+    _hasSuccessfulTitle = false;
+    _lastTitleCheckpoint = 0;
     state = const ChatState();
   }
 
@@ -602,6 +708,16 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
     activeConversationId = conversationId;
 
+    // Re-derive title-tracking state for the conversation we just
+    // switched into, so checkpoints resume from the right place instead
+    // of re-firing immediately or never firing again.
+    final messageCount = messages.length;
+    final conversation = await chatDao.getConversation(conversationId);
+    _hasSuccessfulTitle =
+        conversation != null && conversation.title != 'New Chat';
+    _lastTitleCheckpoint =
+        (messageCount ~/ _titleCheckpointInterval) * _titleCheckpointInterval;
+
     state = state.copyWith(
       messages: chatMessages.reversed.toList(),
       isLoadingConversation: false,
@@ -618,6 +734,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
       await _streamSub?.cancel();
       _streamSub = null;
       activeConversationId = null;
+      _hasSuccessfulTitle = false;
+      _lastTitleCheckpoint = 0;
       state = const ChatState();
     }
   }

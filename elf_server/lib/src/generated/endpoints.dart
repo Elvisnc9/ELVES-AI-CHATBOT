@@ -77,6 +77,25 @@ class Endpoints extends _i1.EndpointDispatch {
                 params['aiResponse'],
               ),
         ),
+        'generateTitleFromHistory': _i1.MethodConnector(
+          name: 'generateTitleFromHistory',
+          params: {
+            'turns': _i1.ParameterDescription(
+              name: 'turns',
+              type: _i1.getType<List<String>>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['chat'] as _i2.ChatEndpoint)
+                  .generateTitleFromHistory(
+                    session,
+                    params['turns'],
+                  ),
+        ),
         'sendMessage': _i1.MethodStreamConnector(
           name: 'sendMessage',
           params: {

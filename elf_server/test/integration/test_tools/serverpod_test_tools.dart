@@ -246,6 +246,37 @@ class _ChatEndpoint {
       }
     });
   }
+
+  _i3.Future<String?> generateTitleFromHistory(
+    _i1.TestSessionBuilder sessionBuilder,
+    List<String> turns,
+  ) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'chat',
+            method: 'generateTitleFromHistory',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'chat',
+          methodName: 'generateTitleFromHistory',
+          parameters: _i1.testObjectToJson({'turns': turns}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<String?>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
 }
 
 class _GoogleIdpEndpoint {
