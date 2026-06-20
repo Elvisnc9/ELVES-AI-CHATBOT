@@ -7,11 +7,13 @@ class InputBar extends ConsumerStatefulWidget {
   final TextEditingController textController;
   final FocusNode focusNode;
   final VoidCallback onScrollToLatest;
+  final bool autoFocus;
 
   const InputBar({super.key, 
     required this.textController,
     required this.focusNode,
-    required this.onScrollToLatest,
+    required this.onScrollToLatest, 
+     this.autoFocus = false,
   });
 
   @override
@@ -85,7 +87,8 @@ class InputBarState extends ConsumerState<InputBar> {
                   cursorHeight: 26.0,
                     maxLines: 5,
                     minLines: 1,
-                
+                   autocorrect: true,
+                   autofocus: widget.autoFocus ,
                     style: textTheme.labelMedium?.copyWith(fontSize: 18.sp),
                     decoration: InputDecoration(
                     
@@ -148,9 +151,9 @@ class InputBarState extends ConsumerState<InputBar> {
                               color: theme.scaffoldBackgroundColor,
                             )
                           : Image.asset(
-                              'assets/send.png',
+                              'assets/up-arrow.png',
                               key: const ValueKey('send'),
-                              width: 25,
+                              width: 23,
                               color: theme.scaffoldBackgroundColor,
                             ),
                     ),

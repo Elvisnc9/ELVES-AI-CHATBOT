@@ -2,8 +2,8 @@
 
 import 'dart:async';
 import 'package:elf_client/elf_client.dart';
+import 'package:elf_flutter/provider/chatState.dart';
 import 'package:elf_flutter/provider/shellView.dart';
-import 'package:elf_flutter/widgets/robot.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,11 +61,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
 
-
+ TextTheme get textTheme => Theme.of(context).textTheme;
   @override
   Widget build(BuildContext context) {
-    //  final textTheme = Theme.of(context).textTheme;
-    final theme = Theme.of(context);
+ final theme = Theme.of(context);
+    
    
     final pages = [
       PageSlider(
@@ -97,7 +97,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     ];
 
 
-        final textTheme = Theme.of(context).textTheme;
+       
 
 
     return Stack(
@@ -159,13 +159,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
             
            AnimatedGoogleButton(
-  logo: _isloading
-      ? Indicator()
-      : Image.asset(
+  logo: 
+    Image.asset(
           'assets/google_Logo.png',
           width: 30,
         ),
 
+isLoading : _isloading,
     
   onTap: () async {
     if (_isloading) return;
@@ -191,7 +191,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
       if (!mounted) return;
 
-      ref.read(shellViewProvider.notifier).state = ShellView.chat;
+     // In onboarding.dart, after sign-in:
+ref.read(inputAutofocusProvider.notifier).state = true;
+ref.read(shellViewProvider.notifier).state = ShellView.chat;
     } finally {
       if (mounted) {
         setState(() {
@@ -201,6 +203,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       
     }
   },
+
 ),
 
 
@@ -285,11 +288,13 @@ class PageSlider extends StatelessWidget {
 class AnimatedGoogleButton extends StatelessWidget {
   final VoidCallback onTap;
   final Widget logo;
+  final bool isLoading;
   const AnimatedGoogleButton(
-      {super.key, required this.onTap, required this.logo});
+      {super.key, required this.onTap, required this.logo, required this.isLoading});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -314,6 +319,13 @@ class AnimatedGoogleButton extends StatelessWidget {
                 color: Theme.of(context).secondaryHeaderColor,
               ),
             ),
+
+            SizedBox(width: 5.w,),
+
+            isLoading?  CircularProgressIndicator(
+      color: theme.hintColor,
+      strokeWidth: 5,
+    ) : SizedBox(width: 1.w,)
           ],
         ),
       )
@@ -326,6 +338,7 @@ class AnimatedGoogleButton extends StatelessWidget {
     );
   }
 }
+
 
 class AnimatedTextReveal extends StatelessWidget {
   final String text;
@@ -399,14 +412,4 @@ class GlowShader extends StatelessWidget {
   }
 }
 
-class Indicator extends StatelessWidget {
-  const Indicator({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return CircularProgressIndicator(
-      color: AppColors.light,
-      strokeWidth: 4,
-    );
-  }
-}

@@ -14,7 +14,7 @@ import 'package:elf_flutter/widgets/ChatScreem/typingdot_indicator.dart';
 
 
 
-final hasRequestedInitialFocusProvider = StateProvider<bool>((ref) => false);
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  CHAT SCREEN  (shell — owns the drawer only)
@@ -73,24 +73,12 @@ class _ChatViewState extends ConsumerState<ChatView> {
   double _dragStartX = 0;
   double _pageOffsetAtDragStart = 1.0;
  
-@override
-void initState() {
-  super.initState();
-  Future.delayed(const Duration(milliseconds: 350), () {
-    if (!mounted) return;
-    final alreadyRequested = ref.read(hasRequestedInitialFocusProvider);
-    if (!alreadyRequested) {
-      ref.read(hasRequestedInitialFocusProvider.notifier).state = true;
-      _focusNode.requestFocus();
-    }
-  });
-}
- 
+
   @override
   void dispose() {
     _textController.dispose();
     _scrollController.dispose();
-    _focusNode.dispose();
+   
     super.dispose();
   }
  
@@ -128,31 +116,33 @@ void initState() {
     widget.pageController.jumpTo(newOffset.clamp(0.0, 1.0) * screenWidth);
   }
  
-  void _onHorizontalDragEnd(DragEndDetails details) {
-    if (!_trackingEdgeDrag) return;
-    _trackingEdgeDrag = false;
- 
-    final velocity = details.primaryVelocity ?? 0;
-    final drawerProgress = 1.0 - (widget.pageController.page ?? 1.0);
- 
-    // Snap open if fast rightward flick OR dragged more than 40% across.
-    if (velocity > 300 || drawerProgress > 0.4) {
-      widget.openDrawer();
-    } else {
-      widget.pageController.animateToPage(
-        1,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-      );
-    }
+void _onHorizontalDragEnd(DragEndDetails details) {
+  if (!_trackingEdgeDrag) return;
+  _trackingEdgeDrag = false;
+
+  final velocity = details.primaryVelocity ?? 0;
+  final drawerProgress = 1.0 - (widget.pageController.page ?? 1.0);
+
+  if (velocity > 300 || drawerProgress > 0.4) {
+    widget.openDrawer();
+  } else {
+    // Snapping back to chat — explicitly kill focus so OS doesn't restore it
+    _focusNode.unfocus();
+    widget.pageController.animateToPage(
+      1,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+    );
   }
- 
+}
   // ─────────────────────────────────────────────────────────────────────────
   //  BUILD
   // ─────────────────────────────────────────────────────────────────────────
  
   @override
   Widget build(BuildContext context) {
+
+    final autofocus = ref.watch(inputAutofocusProvider);
     final isLoadingConversation = ref.watch(
       chatProvider.select((s) => s.isLoadingConversation),
     );
@@ -259,6 +249,7 @@ void initState() {
                   textController: _textController,
                   focusNode: _focusNode,
                   onScrollToLatest: _smoothScrollToLatest,
+                  autoFocus: autofocus
                 ),
               ),
             ],
@@ -383,13 +374,15 @@ class _MenuBar extends ConsumerWidget {
                     ref.read(chatProvider.notifier).startNewChat();
                   },
                   child: Image.asset(
-                    'assets/new_chat.png',
+                    'assets/chat.png',
                     color: theme.shadowColor,
-                    width: 35,
+                    width: 30,
                   ),
                 );
               },
             ),
+
+            SizedBox(width: 5.w,)
           ],
           IconButton(
             icon: const Icon(Icons.settings_outlined),

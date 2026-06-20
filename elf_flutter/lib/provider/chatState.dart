@@ -509,3 +509,6 @@ final conversationsProvider = StreamProvider<List<Conversation>>((ref) {
 });
 
 final chatLoadingProvider = StateProvider<bool>((ref) => false);
+
+// anywhere, e.g. in chatState.dart or its own file
+final inputAutofocusProvider = StateProvider<bool>((ref) => true);

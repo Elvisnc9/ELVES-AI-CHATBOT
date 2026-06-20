@@ -1,4 +1,5 @@
 import 'package:elf_flutter/provider/auth_state.dart';
+import 'package:elf_flutter/provider/chatState.dart';
 import 'package:elf_flutter/shared/theme.dart';
 import 'package:elf_flutter/provider/shellView.dart';
 import 'package:flutter/material.dart';
@@ -37,8 +38,9 @@ class _SettingsState extends ConsumerState<Settings> {
             alignment: Alignment.topLeft,
             child: HeroButton(
               child: const Icon(Icons.arrow_back),
-              onPressed: () =>
-                  ref.read(shellViewProvider.notifier).state = ShellView.chat,
+              onPressed: (){
+              ref.read(inputAutofocusProvider.notifier).state = true;
+ref.read(shellViewProvider.notifier).state = ShellView.chat;}
             ),
           ),
 

@@ -47,12 +47,14 @@ class _ElvesDrawerPageState extends ConsumerState<ElvesDrawerPage> {
   void _onHorizontalDragStart(DragStartDetails details) {
     _dragStartX = details.globalPosition.dx;
     _pageOffsetAtDragStart = widget.pageController.page ?? 0.0;
+    ref.read(inputAutofocusProvider.notifier).state = false;
+      FocusManager.instance.primaryFocus?.unfocus(); 
   }
 
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
     final screenWidth = MediaQuery.of(context).size.width;
     final dx = details.globalPosition.dx - _dragStartX;
-
+ref.read(inputAutofocusProvider.notifier).state = false;
     // Left drag (negative dx) moves toward page 1
     final newOffset = _pageOffsetAtDragStart - (dx / screenWidth);
     final clamped = newOffset.clamp(0.0, 1.0);
@@ -62,6 +64,7 @@ class _ElvesDrawerPageState extends ConsumerState<ElvesDrawerPage> {
   void _onHorizontalDragEnd(DragEndDetails details) {
     final velocity = details.primaryVelocity ?? 0;
     final currentPage = widget.pageController.page ?? 0.0;
+    ref.read(inputAutofocusProvider.notifier).state = false;
     // Progress toward page 1 (0 = fully on drawer, 1 = fully on chat)
     final progress = currentPage; // page offset in [0,1]
 
@@ -83,6 +86,7 @@ class _ElvesDrawerPageState extends ConsumerState<ElvesDrawerPage> {
       onHorizontalDragStart: _onHorizontalDragStart,
       onHorizontalDragUpdate: _onHorizontalDragUpdate,
       onHorizontalDragEnd: _onHorizontalDragEnd,
+      
       child: _DrawerPanel(onClose: widget.onClose),
     );
   }
@@ -106,6 +110,8 @@ class _DrawerPanelState extends ConsumerState<_DrawerPanel> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
+  bool _isSearching = false;
+
 
   @override
   void initState() {
@@ -124,20 +130,13 @@ class _DrawerPanelState extends ConsumerState<_DrawerPanel> {
     super.dispose();
   }
 
-  void _collapseSearch() {
-    setState(() {
-      _isSearchExpanded = false;
-      _searchQuery = '';
-      _searchController.clear();
-    });
-    _searchFocusNode.unfocus();
-  }
-
+ 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final conversationsAsync = ref.watch(conversationsProvider);
+    final autofocus = ref.watch(inputAutofocusProvider);
 
     // Filter conversations by search query
     final filtered = conversationsAsync.whenData(
@@ -163,100 +162,105 @@ class _DrawerPanelState extends ConsumerState<_DrawerPanel> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Top bar ──────────────────────────────────────────────────
-              // Padding(
-              //   padding: EdgeInsets.only(
-              //     top: 1.h,
-              //     bottom: 1.h,
-              //     right: 1.h,
-              //     left: 2.h,
-              //   ),
-              //   child: Row(
-              //     children: [
-              // Expanded(
-              //   child: _SearchBar(
-              //     controller: _searchController,
-              //     focusNode: _searchFocusNode,
-              //     onTap: () => setState(() => _isSearchExpanded = true),
-              //     onChanged: (q) => setState(() => _searchQuery = q),
-              //     isExpanded: _isSearchExpanded,
-              //   ),
-              // ),
-              // if (_isSearchExpanded) ...[
-              //   GestureDetector(
-              //     onTap: _collapseSearch,
-              //     child: Icon(
-              //       Icons.cancel,
-              //       color: theme.hintColor,
-              //       size: 30,
-              //     ),
-              //   ),
-              // ] else ...[
-              //   GestureDetector(
-              //     onTap: () {
-              //       widget.onClose();
-              //       ref.read(chatProvider.notifier).startNewChat();
-              //     },
-              //     child: Icon(
-              //       Icons.edit_note_outlined,
-              //       color: theme.hintColor,
-              //       size: 28,
-              //     ),
-              //   ),
-              // ],))
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                Text(
-                'Elves AI',
-                textAlign: TextAlign.center,
-                style: textTheme.bodyLarge?.copyWith(fontSize: 35.sp),
-              ),
-
-
-               
-                  Container(
-                    width: 30.w,
-                    height: 6.h,
-                    decoration: BoxDecoration(
-                      color: theme.canvasColor,
-                      borderRadius: BorderRadius.circular(30),),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                      
-                           GestureDetector(
-                            onTap: () {
-                              widget.onClose();
-                              ref.read(chatProvider.notifier).startNewChat();
-                            },
-                            child: Icon(
-                              Icons.search,
-                              color: theme.hintColor,
-                              size: 35,
-                            ),
-                          ),
-                      
-                      
-                          GestureDetector(
-                            onTap: () {
-                              widget.onClose();
-                              ref.read(chatProvider.notifier).startNewChat();
-                            },
-                            child: Icon(
-                              Icons.edit_note_outlined,
-                              color: theme.hintColor,
-                              size: 30,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+            
+             AnimatedContainer(
+  duration: const Duration(milliseconds: 200),
+  curve: Curves.easeInOut,
+  height: 6.h,
+  decoration: BoxDecoration(
+    color: _isSearching ? theme.canvasColor : Colors.transparent,
+    borderRadius: BorderRadius.circular(30),
+  ),
+  child: _isSearching
+      // ── SEARCH MODE ──────────────────────────────────────
+      ? Row(
+          children: [
+            SizedBox(width: 1.5.h),
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                onChanged: (q) => setState(() => _searchQuery = q),
+                autofocus: true,
+                cursorColor: theme.hintColor,
+                style: textTheme.labelMedium,
+                decoration: InputDecoration(
+                  hintText: 'Search',
+                  hintStyle: textTheme.labelMedium?.copyWith(
+                    color: theme.hintColor.withOpacity(0.8),
+                    fontWeight: FontWeight.normal,
                   ),
-                ]
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
               ),
+            ),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isSearching = false;
+                  _searchQuery = '';
+                  _searchController.clear();
+                });
+                
+                _searchFocusNode.unfocus();
+              },
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 1.5.h),
+                child: Icon(Icons.cancel_sharp,
+                size: 30,
+                )
+              ),
+            ),
+          ],
+        )
+      // ── NORMAL MODE ──────────────────────────────────────
+      : Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Elves AI',
+              style: textTheme.bodyLarge?.copyWith(fontSize: 35.sp),
+            ),
+            Container(
+              width: 30.w,
+              height: 6.h,
+              decoration: BoxDecoration(
+                color: theme.canvasColor,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        setState(() => _isSearching = true);
+                        // slight delay so the animation starts before focus
+                        Future.delayed(
+                          const Duration(milliseconds: 150),
+                          () => _searchFocusNode.requestFocus(),
+                        );
+                      },
+                      child: Icon(Icons.search, color: theme.hintColor, size: 35),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        widget.onClose();
+                        ref.read(chatProvider.notifier).startNewChat();
+                      },
+                      child: Image.asset('assets/chat.png',  height: 30, 
+                      color: theme.hintColor),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+),
 
               SizedBox(height: 3.h),
 
@@ -419,88 +423,6 @@ class _DrawerPanelState extends ConsumerState<_DrawerPanel> {
   }
 }
 
-// ─────────────────────────────────────────────
-//  SEARCH BAR  (unchanged)
-// ─────────────────────────────────────────────
-
-class _SearchBar extends StatelessWidget {
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final VoidCallback onTap;
-  final ValueChanged<String> onChanged;
-  final bool isExpanded;
-
-  const _SearchBar({
-    required this.controller,
-    required this.focusNode,
-    required this.onTap,
-    required this.onChanged,
-    required this.isExpanded,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final textTheme = theme.textTheme;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 1.5.h, vertical: 0.5.h),
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          height: 44,
-          decoration: BoxDecoration(
-            color: theme.canvasColor,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            children: [
-              Icon(
-                Icons.search,
-                color: theme.hintColor.withOpacity(0.5),
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  focusNode: focusNode,
-                  onChanged: onChanged,
-                  style: textTheme.labelMedium,
-                  cursorColor: theme.hintColor,
-                  decoration: InputDecoration(
-                    hintText: 'Search conversations',
-                    hintStyle: textTheme.labelMedium?.copyWith(
-                      color: theme.hintColor.withOpacity(0.4),
-                      fontWeight: FontWeight.normal,
-                    ),
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ),
-              if (controller.text.isNotEmpty)
-                GestureDetector(
-                  onTap: () {
-                    controller.clear();
-                    onChanged('');
-                  },
-                  child: Icon(
-                    Icons.close,
-                    color: theme.hintColor.withOpacity(0.5),
-                    size: 18,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────
 //  CONVERSATION GROUP  (unchanged)
@@ -645,53 +567,39 @@ class _DrawerFooter extends ConsumerWidget {
     final userProfile = authState.userProfile;
 
     final displayName =
-        userProfile?.fullName ?? userProfile?.userName ?? 'Sign In';
+        userProfile?.fullName ?? userProfile?.userName ?? 'Sign in';
     final imageUrl = userProfile?.imageUrl?.toString();
 
     return Material(
       color: Colors.transparent,
-      child: InkWell(
-        enableFeedback: false,
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          onClose();
-          ref.read(shellViewProvider.notifier).state = authState.isAuthenticated
-              ? ShellView.settings
-              : ShellView.onboarding;
-        },
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 2.h, vertical: 1.5.h),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: AppColors.dark,
-                backgroundImage: (imageUrl != null && imageUrl.isNotEmpty)
-                    ? NetworkImage(imageUrl)
-                    : null,
-                child: (imageUrl == null || imageUrl.isEmpty)
-                    ? const Icon(
-                        Icons.person_3_outlined,
-                        color: Colors.white,
-                        size: 18,
-                      )
-                    : null,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 1.h, vertical: 1.5.h),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: theme.hintColor,
+              backgroundImage: (imageUrl != null && imageUrl.isNotEmpty)
+                  ? NetworkImage(imageUrl)
+                  : null,
+              child: (imageUrl == null || imageUrl.isEmpty)
+                  ?  Icon(
+                      Icons.person_3_outlined,
+                      color: theme.canvasColor,
+                      size: 25,
+                    )
+                  : null,
+            ),
+            SizedBox(width: 3.w),
+            Expanded(
+              child: Text(
+                displayName,
+                style: textTheme.labelMedium?.copyWith(fontSize: 18.sp),
+                overflow: TextOverflow.ellipsis,
               ),
-              SizedBox(width: 3.w),
-              Expanded(
-                child: Text(
-                  displayName,
-                  style: textTheme.labelMedium,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Icon(
-                Icons.more_horiz,
-                color: theme.secondaryHeaderColor.withOpacity(0.4),
-                size: 20,
-              ),
-            ],
-          ),
+            ),
+           
+          ],
         ),
       ),
     );
