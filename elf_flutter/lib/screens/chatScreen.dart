@@ -9,7 +9,6 @@ import 'package:the_responsive_builder/the_responsive_builder.dart';
 
 import 'package:elf_flutter/provider/chatState.dart';
 import 'package:elf_flutter/provider/shellView.dart';
-import 'package:elf_flutter/widgets/ChatScreem/chatModels.dart';
 import 'package:elf_flutter/widgets/ChatScreem/typingdot_indicator.dart';
 import 'package:elf_flutter/widgets/elvesDrawer.dart';
 
@@ -45,9 +44,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 }
 
 
+
+
+
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  CHAT VIEW
 // ─────────────────────────────────────────────────────────────────────────────
+
 
 class ChatView extends ConsumerStatefulWidget {
   final ElvesDrawerController drawerController;
@@ -118,109 +122,108 @@ void _smoothScrollToLatest() {
    final showHint = hint != null;
    final itemCount = messages.length + (showHint ? 1 : 0);
 
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
-      padding: EdgeInsets.only(
+    return SizedBox.expand(
+        child: Padding(
+          padding:EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: SizedBox.expand(
-        child: Stack(
-          children: [
-            // ── Message list ───────────────────────────────────────────
-            Positioned.fill(
-              child: AnimatedOpacity(
-                opacity: (hasMessages || isLoadingConversation) ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 400),
-                curve: Curves.easeOut,
-                child: IgnorePointer(
-                  ignoring: !hasMessages && !isLoadingConversation,
-                  child: RepaintBoundary(
-                    child: ShaderMask(
-                      shaderCallback: (Rect bounds) {
-                        return const LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black,
-                            Colors.black,
-                            Colors.transparent,
-                          ],
-                          stops: [0.0, 0.30, 0.80, 1.0],
-                        ).createShader(bounds);
-                      },
-                      blendMode: BlendMode.dstIn,
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        child: isLoadingConversation
-                            ? KeyedSubtree(
-                                key: const ValueKey('shimmer'),
-                                child: chatShimmerList(),
-                              )
-                            : KeyedSubtree(
-                                key: const ValueKey('messages'),
-                                child: ListView.builder(
-                                  controller: _scrollController,
-                                  reverse: true,
-                                  padding: EdgeInsets.only(
-                                    top: 20.h,
-                                    bottom: 15.h,
-                                    left: 12,
-                                    right: 12,
+          child: Stack(
+            children: [
+              // ── Message list ───────────────────────────────────────────
+              Positioned.fill(
+                child: AnimatedOpacity(
+                  opacity: (hasMessages || isLoadingConversation) ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeOut,
+                  child: IgnorePointer(
+                    ignoring: !hasMessages && !isLoadingConversation,
+                    child: RepaintBoundary(
+                      child: ShaderMask(
+                        shaderCallback: (Rect bounds) {
+                          return const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black,
+                              Colors.black,
+                              Colors.transparent,
+                            ],
+                            stops: [0.0, 0.30, 0.80, 1.0],
+                          ).createShader(bounds);
+                        },
+                        blendMode: BlendMode.dstIn,
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: isLoadingConversation
+                              ? KeyedSubtree(
+                                  key: const ValueKey('shimmer'),
+                                  child: chatShimmerList(),
+                                )
+                              : KeyedSubtree(
+                                  key: const ValueKey('messages'),
+                                  child: ListView.builder(
+                                    controller: _scrollController,
+                                    reverse: true,
+                                    padding: EdgeInsets.only(
+                                      top: 20.h,
+                                      bottom: 15.h,
+                                      left: 12,
+                                      right: 12,
+                                    ),
+                                    itemCount: messages.length + (showHint ? 1 : 0),
+                                  itemBuilder: (context, index) {
+               // index 0 is the TOP of the reversed list = most recent
+               // Show hint above the typing dot (index 0 slot)
+               if (showHint && index == 1) {
+                 return _connectionHint(hint, theme);  // ← hint row
+               }
+                final msgIndex = (showHint && index > 1) ? index - 1 : index;
+               final message = messages[msgIndex];
+               return _chatBubble(message, key: ValueKey(message.id));
+          //    }
+                                    },
                                   ),
-                                  itemCount: messages.length + (showHint ? 1 : 0),
-                                itemBuilder: (context, index) {
-     // index 0 is the TOP of the reversed list = most recent
-     // Show hint above the typing dot (index 0 slot)
-     if (showHint && index == 1) {
-       return _connectionHint(hint, theme);  // ← hint row
-     }
-      final msgIndex = (showHint && index > 1) ? index - 1 : index;
-     final message = messages[msgIndex];
-     return _chatBubble(message, key: ValueKey(message.id));
-//    }
-                                  },
                                 ),
-                              ),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-
-            // ── Welcome screen ─────────────────────────────────────────
-            Positioned.fill(
-              child: AnimatedOpacity(
-                opacity: (hasMessages || isLoadingConversation) ? 0.0 : 1.0,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeIn,
-                child: IgnorePointer(
-                  ignoring: hasMessages || isLoadingConversation,
-                  child: _buildWelcomeContent(theme),
+          
+              // ── Welcome screen ─────────────────────────────────────────
+              Positioned.fill(
+                child: AnimatedOpacity(
+                  opacity: (hasMessages || isLoadingConversation) ? 0.0 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeIn,
+                  child: IgnorePointer(
+                    ignoring: hasMessages || isLoadingConversation,
+                    child: _buildWelcomeContent(theme),
+                  ),
                 ),
               ),
-            ),
-
-            // ── Menu bar ──────────────────────────────────────────────
-            Positioned(
-              top: 3.h,
-              left: 0,
-              right: 0,
-              child: _buildMenuBar(theme),
-            ),
-
-            // ── Input bar ─────────────────────────────────────────────
-            Positioned(
-              bottom: 10,
-              left: 0,
-              right: 0,
-              child: _buildInputBar(theme, chatState.isLoading),
-            ),
-          ],
+          
+              // ── Menu bar ──────────────────────────────────────────────
+              Positioned(
+                top: 3.h,
+                left: 0,
+                right: 0,
+                child: _buildMenuBar(theme),
+              ),
+          
+              // ── Input bar ─────────────────────────────────────────────
+              Positioned(
+                bottom: 10,
+                left: 0,
+                right: 0,
+                child: _buildInputBar(theme, chatState.isLoading),
+              ),
+            ],
+          ),
         ),
-      ),
+      
     );
   }
 
@@ -231,12 +234,12 @@ void _smoothScrollToLatest() {
         Padding(
           padding: EdgeInsets.symmetric(vertical: 2.h, horizontal: 20),
           child: Text(
-            'How can I help ?',
+            'How can I help Elvis ?',
             textAlign: TextAlign.center,
-            style: textTheme.displayLarge?.copyWith(fontSize: 32.sp),
+            style: textTheme.displayLarge?.copyWith(fontSize: 30.sp),
           ),
         ).animate().fadeIn().slideX(begin: 0.3),
-        PremiumFloatingChips(),
+  
       ],
     );
   }
@@ -258,140 +261,113 @@ Widget _buildInputBar(ThemeData theme, bool isLoading) {
       !hasText;
 
   return Padding(
-    padding: const EdgeInsets.all(8.0),
-    child: Expanded(
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 1.2.h,
-        ),
-        decoration: BoxDecoration(
-          color: theme.canvasColor,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight:
-                      5 *
-                          ((textTheme.labelMedium?.fontSize ?? 14.sp) *
-                              1.4) +
-                      8,
-                ),
-                child: Scrollbar(
-                  child: TextField(
-                    enabled: !isLoading && !isLoadingConversation,
-                    controller: _textController,
-                    focusNode: _focusNode,
-                    cursorColor: theme.hintColor,
-                    keyboardType: TextInputType.multiline,
-                    textInputAction: TextInputAction.newline,
-                    maxLines: 5,
-                    minLines: 1,
-                    autofocus: true,
-                    style: textTheme.labelMedium,
-                    onChanged: (_) {
-                      setState(() {});
-                    },
-                    decoration: InputDecoration(
-                      hintText: 'Ask Anything...',
-                      hintStyle: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.bold,
-                        color: theme.cardColor,
-                      ),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
+    padding: const EdgeInsets.all(10.0),
+    child: Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 1.2.h,
+      ),
+      decoration: BoxDecoration(
+        color: theme.canvasColor,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight:
+                    5 *
+                        ((textTheme.labelMedium?.fontSize ?? 14.sp) *
+                            1.4) +
+                    8,
+              ),
+              child: Scrollbar(
+                child: TextField(
+                  enabled: !isLoading && !isLoadingConversation,
+                  controller: _textController,
+                  focusNode: _focusNode,
+                  cursorColor: theme.hintColor,
+                  keyboardType: TextInputType.multiline,
+                  textInputAction: TextInputAction.newline,
+                  maxLines: 5,
+                  minLines: 1,
+                  autofocus: true,
+                  style: textTheme.labelMedium,
+                  onChanged: (_) {
+                    setState(() {});
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Ask Anything...',
+                    hintStyle: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.bold,
+                      color: theme.cardColor,
                     ),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
                   ),
                 ),
               ),
             ),
-    
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              transitionBuilder: (child, animation) =>
-                  ScaleTransition(scale: animation, child: child),
-              child: GestureDetector(
-                      key: const ValueKey('voice'),
-                      onTap: () {},
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: theme.dividerColor,
-                          ),
-                          child: Image.asset(
-                            'assets/SoundWaves.png',
-                            color: theme.scaffoldBackgroundColor,
-                            width: 25,
-                          ),
-                        ),
-                      ),
-                    )
-                 
-            ),
-    
-            const SizedBox(width: 8),
-    
-    GestureDetector(
-      onTap: isLoadingConversation
-          ? null
-          : () async {
-      if (!canSend) {
-        ref.read(chatProvider.notifier).stopGeneration();
-        return;
-      }
-    
-      final text = _textController.text.trim();
-      if (text.isEmpty) return;
-    
-      _textController.clear();
-      setState(() {});
-      _focusNode.unfocus();
-    
-      await ref
-          .read(chatProvider.notifier)
-          .sendMessage(text);
-    
-      _smoothScrollToLatest();
-    },
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: theme.dividerColor,
-        ),
-        child: AnimatedSwitcher(  // ← moved INSIDE container
-          duration: const Duration(milliseconds: 200),
-          transitionBuilder: (child, animation) =>
-      ScaleTransition(scale: animation, child: child),
-          child: !canSend
-      ? Icon(
-          Icons.stop,
-          key: const ValueKey('stop'),
-          size: 30,
-          color: theme.scaffoldBackgroundColor,
-        )
-      : Image.asset(
-          'assets/send.png',
-          key: const ValueKey('send'),
-          width: 25,
-          color: theme.scaffoldBackgroundColor,
-        ),
-        ),
+          ),
+  
+          
+          const SizedBox(width: 8),
+  
+  GestureDetector(
+    onTap: isLoadingConversation
+        ? null
+        : () async {
+    if (!canSend) {
+      ref.read(chatProvider.notifier).stopGeneration();
+      return;
+    }
+  
+    final text = _textController.text.trim();
+    if (text.isEmpty) return;
+  
+    _textController.clear();
+    setState(() {});
+    _focusNode.unfocus();
+  
+    await ref
+        .read(chatProvider.notifier)
+        .sendMessage(text);
+  
+    _smoothScrollToLatest();
+  },
+    child: Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: theme.dividerColor,
+      ),
+      child: AnimatedSwitcher(  // ← moved INSIDE container
+        duration: const Duration(milliseconds: 200),
+        transitionBuilder: (child, animation) =>
+    ScaleTransition(scale: animation, child: child),
+        child: !canSend
+    ? Icon(
+        Icons.stop,
+        key: const ValueKey('stop'),
+        size: 30,
+        color: theme.scaffoldBackgroundColor,
+      )
+    : Image.asset(
+        'assets/send.png',
+        key: const ValueKey('send'),
+        width: 25,
+        color: theme.scaffoldBackgroundColor,
+      ),
       ),
     ),
-          ],
-        ),
-      ).animate().fadeIn(duration: 250.ms).slideY(begin: 0.2),
-    ),
+  ),
+        ],
+      ),
+    )
   );
 }
 

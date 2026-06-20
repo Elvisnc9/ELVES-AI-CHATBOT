@@ -8,10 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
-// import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 import 'package:the_responsive_builder/the_responsive_builder.dart';
-// import 'package:video_player/video_player.dart';
-
 import 'package:elf_flutter/shared/theme.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -44,7 +41,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   void dispose() {
     _autoScrollTimer.cancel();
-    _pageController.dispose(); // Dispose video controller
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -67,7 +64,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget build(BuildContext context) {
     //  final textTheme = Theme.of(context).textTheme;
     final theme = Theme.of(context);
-    
    
     final pages = [
       PageSlider(
@@ -103,21 +99,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         Column(
           children: [
             const Spacer(),
-
             SizedBox(
               // adjust as needed
-              height: 55.h,
-              child: Robot()
+              height: 50.h,
+           
                )
                 .animate()
                 .fadeIn(duration: 800.ms)
                 .scale(begin: const Offset(0.85, 0.85)),
 
-
-
             /// TEXT
             SizedBox(
-              height: 30.h,
+              height: 28.h,
               child: PageView.builder(
                 controller: _pageController,
                 itemCount: pages.length,
@@ -148,7 +141,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ),
             ),
 
-            const Spacer(),
+            SizedBox(height: 2.h),
+
+            
            AnimatedGoogleButton(
   logo: _isloading
       ? Indicator()
@@ -156,6 +151,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           'assets/google_Logo.png',
           width: 30,
         ),
+
+    
   onTap: () async {
     if (_isloading) return;
 
@@ -181,20 +178,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       if (!mounted) return;
 
       ref.read(shellViewProvider.notifier).state = ShellView.chat;
-    } catch (e, stack) {
-      print('Google sign-in failed with error:');
-      print(e);
-      print('Stack trace:');
-      print(stack);
-
-     
     } finally {
       if (mounted) {
         setState(() {
           _isloading = false;
         });
       }
-      print('Sign-in flow ended (loading = false)');
+      
     }
   },
 ),
@@ -303,7 +293,7 @@ class AnimatedGoogleButton extends StatelessWidget {
             logo,
             SizedBox(width: 3.w),
             Text(
-              "Login with Google",
+              "Continue with Google",
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,

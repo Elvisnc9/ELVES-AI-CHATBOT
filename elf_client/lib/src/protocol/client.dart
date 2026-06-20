@@ -44,7 +44,6 @@ class EndpointChat extends _i1.EndpointRef {
     },
   );
 
-  /// Generates a short (3–6 word) conversation title from the first exchange.
   _i2.Future<String> generateTitle(
     String userPrompt,
     String aiResponse,
@@ -80,6 +79,13 @@ class EndpointGoogleIdp extends _i3.EndpointGoogleIdpBase {
       'idToken': idToken,
       'accessToken': accessToken,
     },
+  );
+
+  @override
+  _i2.Future<bool> hasAccount() => caller.callServerEndpoint<bool>(
+    'googleIdp',
+    'hasAccount',
+    {},
   );
 }
 

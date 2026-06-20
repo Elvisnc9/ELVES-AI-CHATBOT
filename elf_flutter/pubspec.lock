@@ -249,6 +249,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.12"
+  desktop_webview_window:
+    dependency: transitive
+    description:
+      name: desktop_webview_window
+      sha256: b6fdae2cbf9571879b1761c12f27facaf82e22d0bdc74d049907c2a09a432957
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.0"
   drawerbehavior:
     dependency: "direct main"
     description:
@@ -439,6 +447,22 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_web_auth_2:
+    dependency: transitive
+    description:
+      name: flutter_web_auth_2
+      sha256: "8f9303471dcd96670878c9b7c0c4e14c37595b2add67465f6a868f17a5872dfc"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.0.3"
+  flutter_web_auth_2_platform_interface:
+    dependency: transitive
+    description:
+      name: flutter_web_auth_2_platform_interface
+      sha256: ba0fbba55bffb47242025f96852ad1ffba34bc451568f56ef36e613612baffab
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.0.0"
   flutter_web_plugins:
     dependency: transitive
     description: flutter
@@ -872,58 +896,58 @@ packages:
     dependency: "direct main"
     description:
       name: serverpod_auth_core_client
-      sha256: "88cbbcdea6f4b2b634a66ee52855817f850903c365e2fee4c3fee74ed0d53eac"
+      sha256: "66e0803907c6dca57384b3f7fe4a33cb9997efea8a9ee8bb354010c535bfb680"
       url: "https://pub.dev"
     source: hosted
-    version: "3.2.3"
+    version: "3.4.9"
   serverpod_auth_core_flutter:
     dependency: transitive
     description:
       name: serverpod_auth_core_flutter
-      sha256: "8b9a84d9bb3f8860b62a79db83baf239af29a0f791b641bdc78abb91d6dc7327"
+      sha256: c595c5ed6b54af563df78d7a508ee9d460642c10b8f86a9fcb9903a086d83b22
       url: "https://pub.dev"
     source: hosted
-    version: "3.2.3"
+    version: "3.4.9"
   serverpod_auth_idp_client:
     dependency: transitive
     description:
       name: serverpod_auth_idp_client
-      sha256: "50e65f6b8374403c5717cc4a96bdc4246b3c18b448ba68b61d43ccfaeefec0b6"
+      sha256: d2d9739ddc5f4c98340ddf63e3da03cd82b99a32208cc500e1dd5bb0b2fddd56
       url: "https://pub.dev"
     source: hosted
-    version: "3.2.3"
+    version: "3.4.9"
   serverpod_auth_idp_flutter:
     dependency: "direct main"
     description:
       name: serverpod_auth_idp_flutter
-      sha256: "30659e3c9b7ed92d374dab56a189a50d42a138edf69d72af821b4cab3a5290a8"
+      sha256: "807fe3be9c4d6f22f008d9a706a7654111ccae3717c5a33122bb5663f47d83be"
       url: "https://pub.dev"
     source: hosted
-    version: "3.2.3"
+    version: "3.4.9"
   serverpod_client:
     dependency: transitive
     description:
       name: serverpod_client
-      sha256: "4add5cba3fd6f13d05f12928bff09752efc9096e83d0a8c7d67b4f036634f2b1"
+      sha256: cecd41bab6a7143405e2f2f4614c9575d452fe1cdc76a59087e9c035db7b6af3
       url: "https://pub.dev"
     source: hosted
-    version: "3.2.3"
+    version: "3.4.9"
   serverpod_flutter:
     dependency: "direct main"
     description:
       name: serverpod_flutter
-      sha256: "7d63b5b2b648bb03d3a49687d2dbcc1713bb4245cb832dc334d984c7d7e54e02"
+      sha256: "0e0ef154504b031ee214ef2e7d27d8229e767b96f51477a2f7e886a5a3514c79"
       url: "https://pub.dev"
     source: hosted
-    version: "3.2.3"
+    version: "3.4.9"
   serverpod_serialization:
     dependency: transitive
     description:
       name: serverpod_serialization
-      sha256: "69d0b721c4b7d50b53861681e1c7d385a3def0be9a52e89fd3bd0c704fce0d37"
+      sha256: "801d2884f4bc2f35f89f48778a43c08ffd3fa1eff31eec211ae3ecaf546fd9d2"
       url: "https://pub.dev"
     source: hosted
-    version: "3.2.3"
+    version: "3.4.9"
   shared_preferences:
     dependency: "direct main"
     description:
@@ -1269,10 +1293,10 @@ packages:
     dependency: transitive
     description:
       name: uuid
-      sha256: a11b666489b1954e01d992f3d601b1804a33937b5a8fe677bd26b8a9f96f96e8
+      sha256: "1fef9e8e11e2991bb773070d4656b7bd5d850967a2456cfc83cf47925ba79489"
       url: "https://pub.dev"
     source: hosted
-    version: "4.5.2"
+    version: "4.5.3"
   vector_graphics:
     dependency: transitive
     description:
@@ -1385,6 +1409,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.15.0"
+  window_to_front:
+    dependency: transitive
+    description:
+      name: window_to_front
+      sha256: "14fad8984db4415e2eeb30b04bb77140b180e260d6cb66b26de126a8657a9241"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.4"
   xdg_directories:
     dependency: transitive
     description:

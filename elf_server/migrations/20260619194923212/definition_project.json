@@ -6,17 +6,17 @@
     {
       "__className__": "serverpod.DatabaseMigrationVersion",
       "module": "serverpod",
-      "version": "20251208110333922-v3-0-0"
+      "version": "20260129180959368"
     },
     {
       "__className__": "serverpod.DatabaseMigrationVersion",
       "module": "serverpod_auth_idp",
-      "version": "20260109031533194"
+      "version": "20260213194423028"
     },
     {
       "__className__": "serverpod.DatabaseMigrationVersion",
       "module": "serverpod_auth_core",
-      "version": "20251208110412389-v3-0-0"
+      "version": "20260129181112269"
     }
   ],
   "migrationApiVersion": 1

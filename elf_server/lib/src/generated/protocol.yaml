@@ -3,6 +3,7 @@ chat:
   - generateTitle:
 googleIdp:
   - login:
+  - hasAccount:
 jwtRefresh:
   - refreshAccessToken:
 greeting:

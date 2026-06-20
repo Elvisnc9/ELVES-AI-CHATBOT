@@ -1,4 +1,5 @@
-import 'package:serverpod/protocol.dart';
+import 'package:elf_server/src/generated/protocol.dart';
+
 import 'package:serverpod/serverpod.dart';
 import 'package:serverpod_auth_idp_server/core.dart';
 import 'package:serverpod_auth_idp_server/providers/google.dart';

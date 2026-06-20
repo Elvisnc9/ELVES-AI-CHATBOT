@@ -19,17 +19,17 @@ void main() async {
     const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
   );
 
-  const String serverUrl = 'SERVER_URL';
+  const String serverUrl = 'http://10.165.21.254:8080/';
   client = Client(serverUrl)
     ..connectivityMonitor = FlutterConnectivityMonitor()
     ..authSessionManager = FlutterAuthSessionManager();
 
-  //  await client.auth.initialize();
+   await client.auth.initialize();
 
-  // client.auth.initializeGoogleSignIn(
-  //   clientId: '',
-  //   serverClientId: ''
-  // );
+  client.auth.initializeGoogleSignIn(
+    clientId: '',
+    serverClientId: ''
+  );
 
   runApp(
     ProviderScope(
@@ -54,7 +54,7 @@ class MyApp extends ConsumerWidget {
               : AppTheme.light,
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
-            title: 'CHATBOT',
+            title: 'ELF',
             theme: AppTheme.light,
             themeMode: themeMode,
             darkTheme: AppTheme.darkTheme,

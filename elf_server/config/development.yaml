@@ -9,21 +9,21 @@
 # Configuration for the main API server.
 apiServer:
   port: 8080
-  publicHost: ADD HOST
+  publicHost: 10.165.21.254
   publicPort: 8080
   publicScheme: http
 
 # Configuration for the Insights server.
 insightsServer:
   port: 8081
-  publicHost: ADD HOST
+  publicHost: 10.165.21.254
   publicPort: 8081
   publicScheme: http
 
 # Configuration for the web server.
 webServer:
   port: 8082
-  publicHost: ADD HOST
+  publicHost: 10.165.21.254
   publicPort: 8082
   publicScheme: http
 
@@ -31,7 +31,7 @@ webServer:
 database:
   host: localhost
   port: 5432
-  name: postgres
+  name: elf
   user: postgres
   requireSsl: false # defaults to false
   #isUnixSocket: true # defaults to false
