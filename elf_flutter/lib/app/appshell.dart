@@ -48,57 +48,43 @@ class AppShellState extends ConsumerState<AppShell> {
     );
   }
 
-  Widget _buildOverlayView(ShellView view) {
-    switch (view) {
-      case ShellView.onboarding:
-        return OnboardingScreen(key: const ValueKey('onboarding'));
-      case ShellView.settings:
-        return Settings(key: const ValueKey('settings'));
-      default:
-        return const SizedBox.shrink();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final view = ref.watch(shellViewProvider);
-    final showOverlay = view == ShellView.onboarding || view == ShellView.settings;
 
+    // Settings and Onboarding fully replace the PageView —
+    // no overlay, no see-through.
+    if (view == ShellView.settings) {
+      return const Scaffold(
+        body: Settings(key: ValueKey('settings')),
+      );
+    }
+
+    if (view == ShellView.onboarding) {
+      return const Scaffold(
+        body: OnboardingScreen(key: ValueKey('onboarding')),
+      );
+    }
+
+    // ShellView.chat → PageView with drawer at 0, chat at 1
     return Scaffold(
       extendBodyBehindAppBar: true,
       resizeToAvoidBottomInset: false,
-      body: Stack(
+      body: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(),
         children: [
-          // ── PageView: [DrawerPage, ChatScreen] ─────────────────────────
-          PageView(
-            controller: _pageController,
-            // All gesture control is manual — we drive the PageController
-            // ourselves from GestureDetectors inside each page.
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              // Page 0 — Drawer
-              ElvesDrawerPage(
-                pageController: _pageController,
-                onClose: closeDrawer,
-              ),
-              // Page 1 — Chat
-              ChatScreen(
-                key: const ValueKey('chat'),
-                openDrawer: openDrawer,
-                pageController: _pageController,
-              ),
-            ],
+          // Page 0 — Drawer
+          ElvesDrawerPage(
+            pageController: _pageController,
+            onClose: closeDrawer,
           ),
-
-          // ── Onboarding / Settings overlay ──────────────────────────────
-          if (showOverlay)
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              layoutBuilder: (current, previous) => Stack(
-                children: [...previous, if (current != null) current],
-              ),
-              child: _buildOverlayView(view),
-            ),
+          // Page 1 — Chat
+          ChatScreen(
+            key: const ValueKey('chat'),
+            openDrawer: openDrawer,
+            pageController: _pageController,
+          ),
         ],
       ),
     );

@@ -144,157 +144,193 @@ class _DrawerPanelState extends ConsumerState<_DrawerPanel> {
       (list) => _searchQuery.isEmpty
           ? list
           : list
-              .where(
-                (c) => c.title
-                    .toLowerCase()
-                    .contains(_searchQuery.toLowerCase()),
-              )
-              .toList(),
+                .where(
+                  (c) => c.title.toLowerCase().contains(
+                    _searchQuery.toLowerCase(),
+                  ),
+                )
+                .toList(),
     );
 
     return Container(
       color: theme.scaffoldBackgroundColor,
       child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Top bar ──────────────────────────────────────────────────
-            Padding(
-              padding: EdgeInsets.only(
-                top: 1.h,
-                bottom: 1.h,
-                right: 0.4.w,
-                left: 1.h,
-              ),
-              child: Row(
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: 2.h,
+            vertical: 2.h,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Top bar ──────────────────────────────────────────────────
+              // Padding(
+              //   padding: EdgeInsets.only(
+              //     top: 1.h,
+              //     bottom: 1.h,
+              //     right: 1.h,
+              //     left: 2.h,
+              //   ),
+              //   child: Row(
+              //     children: [
+              // Expanded(
+              //   child: _SearchBar(
+              //     controller: _searchController,
+              //     focusNode: _searchFocusNode,
+              //     onTap: () => setState(() => _isSearchExpanded = true),
+              //     onChanged: (q) => setState(() => _searchQuery = q),
+              //     isExpanded: _isSearchExpanded,
+              //   ),
+              // ),
+              // if (_isSearchExpanded) ...[
+              //   GestureDetector(
+              //     onTap: _collapseSearch,
+              //     child: Icon(
+              //       Icons.cancel,
+              //       color: theme.hintColor,
+              //       size: 30,
+              //     ),
+              //   ),
+              // ] else ...[
+              //   GestureDetector(
+              //     onTap: () {
+              //       widget.onClose();
+              //       ref.read(chatProvider.notifier).startNewChat();
+              //     },
+              //     child: Icon(
+              //       Icons.edit_note_outlined,
+              //       color: theme.hintColor,
+              //       size: 28,
+              //     ),
+              //   ),
+              // ],))
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: _SearchBar(
-                      controller: _searchController,
-                      focusNode: _searchFocusNode,
-                      onTap: () => setState(() => _isSearchExpanded = true),
-                      onChanged: (q) => setState(() => _searchQuery = q),
-                      isExpanded: _isSearchExpanded,
+                Text(
+                'Elves AI',
+                textAlign: TextAlign.center,
+                style: textTheme.bodyLarge?.copyWith(fontSize: 35.sp),
+              ),
+
+
+               
+                  Container(
+                    width: 30.w,
+                    height: 6.h,
+                    decoration: BoxDecoration(
+                      color: theme.canvasColor,
+                      borderRadius: BorderRadius.circular(30),),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                      
+                           GestureDetector(
+                            onTap: () {
+                              widget.onClose();
+                              ref.read(chatProvider.notifier).startNewChat();
+                            },
+                            child: Icon(
+                              Icons.search,
+                              color: theme.hintColor,
+                              size: 35,
+                            ),
+                          ),
+                      
+                      
+                          GestureDetector(
+                            onTap: () {
+                              widget.onClose();
+                              ref.read(chatProvider.notifier).startNewChat();
+                            },
+                            child: Icon(
+                              Icons.edit_note_outlined,
+                              color: theme.hintColor,
+                              size: 30,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  if (_isSearchExpanded) ...[
-                    GestureDetector(
-                      onTap: _collapseSearch,
-                      child: Icon(
-                        Icons.cancel,
-                        color: theme.hintColor,
-                        size: 30,
-                      ),
-                    ),
-                  ] else ...[
-                    GestureDetector(
-                      onTap: () {
-                        widget.onClose();
-                        ref.read(chatProvider.notifier).startNewChat();
-                      },
-                      child: Icon(
-                        Icons.edit_note_outlined,
-                        color: theme.hintColor,
-                        size: 28,
-                      ),
-                    ),
-                  ],
-                  SizedBox(width: 2.w),
-                ],
+                ]
               ),
-            ),
 
-            // ── Section links (hidden in search mode) ───────────────────
-            if (!_isSearchExpanded) ...[
-              _LeadingItem(
-                icon: Icons.image_outlined,
-                text: 'Images',
-                onTap: () {},
-              ),
-              _LeadingItem(
-                icon: Icons.music_note_outlined,
-                text: 'AI music',
-                onTap: () {},
-              ),
-              _LeadingItem(
-                icon: Icons.terminal_outlined,
-                text: 'Code BUD',
-                onTap: () {},
-              ),
-              _LeadingItem(
-                icon: Icons.video_camera_back_outlined,
-                text: 'AI video',
-                onTap: () {},
-              ),
-              SizedBox(height: 1.h),
-            ],
+              SizedBox(height: 3.h),
 
-            SizedBox(height: 1.h),
+              Text(
+                'Coversation  History',
+                textAlign: TextAlign.center,
+                style: textTheme.displayLarge?.copyWith(fontSize: 20.sp, ),
+              ),
 
-            // ── Conversations list ────────────────────────────────────────
-            Expanded(
-              child: filtered.when(
-                data: (conversations) {
-                  if (conversations.isEmpty) {
-                    return Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 5.h),
-                        child: Text(
-                          _searchQuery.isEmpty
-                              ? 'No conversations yet'
-                              : 'No results for "$_searchQuery"',
-                          style: textTheme.labelSmall?.copyWith(
-                            fontSize: 15.sp,
-                            color:
-                                theme.secondaryHeaderColor.withOpacity(0.3),
+              // ── Conversations list ────────────────────────────────────────
+              Expanded(
+                child: filtered.when(
+                  data: (conversations) {
+                    if (conversations.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 5.h),
+                          child: Text(
+                            _searchQuery.isEmpty
+                                ? 'No conversations yet'
+                                : 'No results for "$_searchQuery"',
+                            style: textTheme.labelSmall?.copyWith(
+                              fontSize: 15.sp,
+                              color: theme.secondaryHeaderColor.withOpacity(
+                                0.3,
+                              ),
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    );
-                  }
-
-                  final groups = _groupConversations(conversations);
-
-                  return ListView.builder(
-                    padding: EdgeInsets.symmetric(horizontal: 1.h),
-                    itemCount: groups.length,
-                    itemBuilder: (_, i) {
-                      final group = groups[i];
-                      return _ConversationGroup(
-                        label: group.label,
-                        conversations: group.items,
-                        onTap: (convo) {
-                          widget.onClose();
-                          ref
-                              .read(chatProvider.notifier)
-                              .loadConversation(convo.id);
-                        },
-                        onDelete: (convo) => _showDeleteDialog(
-                          context,
-                          ref,
-                          convo.id,
-                          convo.title,
                         ),
                       );
-                    },
-                  );
-                },
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(
-                  child: Text(
-                    'Failed to load',
-                    style: textTheme.labelSmall,
+                    }
+
+                    final groups = _groupConversations(conversations);
+
+                    return ListView.builder(
+                      itemCount: groups.length,
+                      itemBuilder: (_, i) {
+                        final group = groups[i];
+                        return _ConversationGroup(
+                          label: group.label,
+                          conversations: group.items,
+                          onTap: (convo) {
+                            widget.onClose();
+                            ref
+                                .read(chatProvider.notifier)
+                                .loadConversation(convo.id);
+                          },
+                          onDelete: (convo) => _showDeleteDialog(
+                            context,
+                            ref,
+                            convo.id,
+                            convo.title,
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => Center(
+                    child: Text(
+                      'Failed to load',
+                      style: textTheme.labelSmall,
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            // ── Footer ───────────────────────────────────────────────────
-            const Divider(height: 1, thickness: 0.3),
-            _DrawerFooter(onClose: widget.onClose),
-          ],
+              // ── Footer ───────────────────────────────────────────────────
+              const Divider(height: 1, thickness: 0.3),
+              _DrawerFooter(onClose: widget.onClose),
+            ],
+          ),
         ),
       ),
     );
@@ -351,8 +387,7 @@ class _DrawerPanelState extends ConsumerState<_DrawerPanel> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: theme.scaffoldBackgroundColor,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Delete conversation?',
           style: theme.textTheme.displayMedium,
@@ -372,8 +407,7 @@ class _DrawerPanelState extends ConsumerState<_DrawerPanel> {
             onPressed: () => Navigator.of(ctx).pop(true),
             child: Text(
               'Delete',
-              style: theme.textTheme.labelMedium
-                  ?.copyWith(color: Colors.red),
+              style: theme.textTheme.labelMedium?.copyWith(color: Colors.red),
             ),
           ),
         ],
@@ -504,7 +538,7 @@ class _ConversationGroup extends StatelessWidget {
           child: Text(
             label,
             style: textTheme.labelSmall?.copyWith(
-              fontSize: 15.sp,
+              fontSize: 12.sp,
               color: theme.hintColor.withOpacity(0.45),
               fontWeight: FontWeight.w600,
               letterSpacing: 0.3,
@@ -570,7 +604,7 @@ class _ConvoTileState extends State<_ConvoTile> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.labelMedium?.copyWith(
-                    fontSize: 15.sp,
+                    fontSize: 16.sp,
                     color: theme.hintColor.withOpacity(0.85),
                   ),
                 ),

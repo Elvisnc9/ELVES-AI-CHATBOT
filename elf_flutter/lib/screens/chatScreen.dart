@@ -1,6 +1,6 @@
 import 'package:elf_flutter/widgets/ChatScreem/actionButtons.dart';
 import 'package:elf_flutter/widgets/ChatScreem/chatShimmer.dart';
-import 'package:elf_flutter/widgets/ChatScreem/imputbar.dart';
+import 'package:elf_flutter/widgets/ChatScreem/inputBar.dart';
 import 'package:elf_flutter/widgets/ChatScreem/typingMarkdownanimation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -31,8 +31,6 @@ class ChatScreen extends ConsumerStatefulWidget {
 }
  
 class _ChatScreenState extends ConsumerState<ChatScreen> {
-  // No ElvesDrawerController — PageController lives in AppShell now.
- 
   @override
   Widget build(BuildContext context) {
     return ChatView(
@@ -68,17 +66,15 @@ class _ChatViewState extends ConsumerState<ChatView> {
   int _prevMessageCount = 0;
  
   // ── Edge-drag state ───────────────────────────────────────────────────────
-  // Only track drags that start within 30 px of the left edge.
-  static const double _edgeThreshold = 30.0;
   bool _trackingEdgeDrag = false;
   double _dragStartX = 0;
-  double _pageOffsetAtDragStart = 1.0; // chat is page 1
+  double _pageOffsetAtDragStart = 1.0;
  
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _focusNode.requestFocus();
+      // if (mounted) _focusNode.requestFocus();
     });
   }
  
@@ -86,7 +82,7 @@ class _ChatViewState extends ConsumerState<ChatView> {
   void dispose() {
     _textController.dispose();
     _scrollController.dispose();
-    _focusNode.dispose();
+    // _focusNode.dispose();
     super.dispose();
   }
  
@@ -102,18 +98,14 @@ class _ChatViewState extends ConsumerState<ChatView> {
   }
  
   // ── Gesture handlers ──────────────────────────────────────────────────────
+  // No left-edge threshold — any right-drag on the chat page peeks the drawer,
+  // matching the ChatGPT iOS feel. Left drags are ignored.
  
   void _onHorizontalDragStart(DragStartDetails details) {
-    final x = details.globalPosition.dx;
-    if (x <= _edgeThreshold) {
-      _trackingEdgeDrag = true;
-      _dragStartX = x;
-      _pageOffsetAtDragStart = widget.pageController.page ?? 1.0;
-      // Dismiss keyboard so the drawer slides in cleanly.
-      _focusNode.unfocus();
-    } else {
-      _trackingEdgeDrag = false;
-    }
+    _trackingEdgeDrag = true;
+    _dragStartX = details.globalPosition.dx;
+    _pageOffsetAtDragStart = widget.pageController.page ?? 1.0;
+    _focusNode.unfocus();
   }
  
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
@@ -121,7 +113,9 @@ class _ChatViewState extends ConsumerState<ChatView> {
     final screenWidth = MediaQuery.of(context).size.width;
     final dx = details.globalPosition.dx - _dragStartX;
  
-    // Positive dx = drag right = toward page 0 (drawer).
+    // Only allow dragging right (toward drawer — decreasing page offset).
+    if (dx <= 0) return;
+ 
     final newOffset = _pageOffsetAtDragStart - (dx / screenWidth);
     widget.pageController.jumpTo(newOffset.clamp(0.0, 1.0) * screenWidth);
   }
@@ -131,11 +125,11 @@ class _ChatViewState extends ConsumerState<ChatView> {
     _trackingEdgeDrag = false;
  
     final velocity = details.primaryVelocity ?? 0;
-    // How far toward the drawer we currently are (0 = chat, 1 = drawer fully open).
     final drawerProgress = 1.0 - (widget.pageController.page ?? 1.0);
  
+    // Snap open if fast rightward flick OR dragged more than 40% across.
     if (velocity > 300 || drawerProgress > 0.4) {
-      widget.openDrawer(); // animateToPage(0) in AppShell
+      widget.openDrawer();
     } else {
       widget.pageController.animateToPage(
         1,
@@ -151,7 +145,6 @@ class _ChatViewState extends ConsumerState<ChatView> {
  
   @override
   Widget build(BuildContext context) {
-    // Use select() so this widget only rebuilds when these specific fields change.
     final isLoadingConversation = ref.watch(
       chatProvider.select((s) => s.isLoadingConversation),
     );
@@ -167,16 +160,12 @@ class _ChatViewState extends ConsumerState<ChatView> {
  
     final hasMessages = messageCount > 0;
  
-    // Scroll on new message — no setState needed.
     if (messageCount != _prevMessageCount) {
       _prevMessageCount = messageCount;
       if (hasMessages) _smoothScrollToLatest();
     }
  
-    final theme = Theme.of(context);
- 
     return GestureDetector(
-      // Edge-drag to reveal the drawer page.
       onHorizontalDragStart: _onHorizontalDragStart,
       onHorizontalDragUpdate: _onHorizontalDragUpdate,
       onHorizontalDragEnd: _onHorizontalDragEnd,
@@ -190,8 +179,7 @@ class _ChatViewState extends ConsumerState<ChatView> {
               // ── Message list ───────────────────────────────────────
               Positioned.fill(
                 child: AnimatedOpacity(
-                  opacity:
-                      (hasMessages || isLoadingConversation) ? 1.0 : 0.0,
+                  opacity: (hasMessages || isLoadingConversation) ? 1.0 : 0.0,
                   duration: const Duration(milliseconds: 400),
                   curve: Curves.easeOut,
                   child: IgnorePointer(
@@ -221,7 +209,6 @@ class _ChatViewState extends ConsumerState<ChatView> {
                                 )
                               : KeyedSubtree(
                                   key: const ValueKey('messages'),
-                                  // Isolated list — rebuilds independently.
                                   child: _MessageList(
                                     scrollController: _scrollController,
                                     hint: hint,
@@ -237,13 +224,11 @@ class _ChatViewState extends ConsumerState<ChatView> {
               // ── Welcome screen ─────────────────────────────────────
               Positioned.fill(
                 child: AnimatedOpacity(
-                  opacity:
-                      (hasMessages || isLoadingConversation) ? 0.0 : 1.0,
+                  opacity: (hasMessages || isLoadingConversation) ? 0.0 : 1.0,
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeIn,
                   child: IgnorePointer(
                     ignoring: hasMessages || isLoadingConversation,
-                    // const — never rebuilds.
                     child: const _WelcomeContent(),
                   ),
                 ),
@@ -254,8 +239,7 @@ class _ChatViewState extends ConsumerState<ChatView> {
                 top: 3.h,
                 left: 0,
                 right: 0,
-                // openDrawer replaces the old drawerController reference.
-                child: _MenuBar(openDrawer: widget.openDrawer,),
+                child: _MenuBar(openDrawer: widget.openDrawer),
               ),
  
               // ── Input bar ─────────────────────────────────────────
@@ -276,6 +260,7 @@ class _ChatViewState extends ConsumerState<ChatView> {
     );
   }
 }
+ 
  
 
 // ─────────────────────────────────────────────────────────────────────────────

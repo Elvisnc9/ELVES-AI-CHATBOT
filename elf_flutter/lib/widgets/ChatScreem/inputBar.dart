@@ -54,7 +54,7 @@ class InputBarState extends ConsumerState<InputBar> {
     final isLoading = ref.watch(chatProvider.select((s) => s.isLoading));
 
     return Padding(
-      padding: const EdgeInsets.all(10.0),
+      padding: const EdgeInsets.all(20.0),
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 1.2.h),
         decoration: BoxDecoration(

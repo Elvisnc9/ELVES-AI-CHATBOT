@@ -30,6 +30,8 @@ class AppTheme {
         iconSize: WidgetStatePropertyAll(30)
       )
     ),
+
+
     textTheme: TextTheme(
     displayLarge: GoogleFonts.plusJakartaSans(
       fontSize: 24.sp,
@@ -72,6 +74,11 @@ class AppTheme {
       fontWeight: FontWeight.w500,
      color: AppColors.light.withOpacity(0.95)
     
+    ),
+     bodyLarge: GoogleFonts.dancingScript(
+      fontSize: 24.sp,
+      height: 1.2,
+      fontWeight: FontWeight.bold,
     ),
 
   )
@@ -148,6 +155,12 @@ class AppTheme {
       fontWeight: FontWeight.w500,
      color: AppColors.light.withOpacity(0.95)
     
+    ),
+      bodyLarge: GoogleFonts.spaceGrotesk(
+      fontSize: 24.sp,
+      height: 1.2,
+      
+      fontWeight: FontWeight.bold,
     ),
 
   ),
