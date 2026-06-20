@@ -6,6 +6,7 @@ A beautifully crafted, production-grade AI chat application built with Flutter. 
 
 ## ✨ Features
 
+
 ### 💬 Chat
 - Real-time AI responses powered by a Serverpod backend
 - Typing indicator with smooth breathing animation
