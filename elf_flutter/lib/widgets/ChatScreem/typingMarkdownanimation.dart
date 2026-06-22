@@ -57,9 +57,10 @@ class _TypingMarkdownState extends State<TypingMarkdown> {
     return MarkdownBody(
       data: _displayText,
       styleSheet: MarkdownStyleSheet(
-        p: widget.textTheme.displayMedium,
+        p: widget.textTheme.displayMedium?.copyWith(height: 1.5),
         strong: widget.textTheme.displayMedium?.copyWith(
           fontWeight: FontWeight.bold,
+          height: 1.5,
           color: theme.hintColor
         ),
       ),

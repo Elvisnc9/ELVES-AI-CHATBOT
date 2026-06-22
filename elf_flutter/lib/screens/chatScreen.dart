@@ -10,7 +10,7 @@ import 'package:the_responsive_builder/the_responsive_builder.dart';
 
 import 'package:elf_flutter/provider/chatState.dart';
 import 'package:elf_flutter/provider/shellView.dart';
-import 'package:elf_flutter/widgets/ChatScreem/typingdot_indicator.dart';
+import 'package:elf_flutter/widgets/ChatScreem/scalingTypingDot.dart';
 
 
 
@@ -428,8 +428,8 @@ class _ChatBubbleState extends ConsumerState<_ChatBubble> {
 
     if (message.type == MessageType.typing) {
       return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 6),
-        child: Align(
+        padding: EdgeInsets.symmetric(vertical: 6, horizontal : 5,),
+        child: Align( 
           alignment: Alignment.centerLeft,
           child: ScalingTypingDot(),
         ),

@@ -261,13 +261,8 @@ class _DrawerPanelState extends ConsumerState<_DrawerPanel> {
         ),
 ),
              
-                 SizedBox(height: _isSearching? 4.h : 8.h),
-              Text(
-                'Coversation  History',
-                textAlign: TextAlign.center,
-                style: textTheme.displayLarge?.copyWith(fontSize: 20.sp, fontWeight: FontWeight.w600 ),
-              ),
-
+                 SizedBox(height: _isSearching? 2.h : 1.h),
+           
 
 
                SizedBox(height: 3.h),
@@ -573,10 +568,7 @@ class _DrawerFooter extends ConsumerWidget {
 
     return Material(
       color: Colors.transparent,
-      child: InkWell(
-        enableFeedback: false,
-        focusColor: Colors.transparent,
-        splashColor: Colors.transparent,
+      child: GestureDetector(
         onTap: () {
           onClose();
           ref.read(shellViewProvider.notifier).state = authState.isAuthenticated
