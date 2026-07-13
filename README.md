@@ -292,7 +292,7 @@ echo "config/passwords.yaml" >> elf_server/.gitignore
 
 | Onboarding | Chat | Drawer | Settings | Home |
 |---|---|---|---|---|
-| <img src="elf_flutter/assets/chatbot10.jpeg" width="180"/> | <img src="elf_flutter/assets/chatbot5.jpeg" width="180"/> | <img src="elf_flutter/assets/chatbot4.jpeg" width="180"/> | <img src="elf_flutter/assets/chatbot3.jpeg" width="180"/> |
+| <img src="elf_flutter/assets/chatbot10.jpeg" width="180"/> | <img src="elf_flutter/assets/chatbot5.jpeg" width="180"/> | <img src="elf_flutter/assets/chatbot4.jpeg" width="180"/> | <img src="elf_flutter/assets/settingd.jpeg" width="180"/> | <img src="elf_flutter/assets/chatbot3.jpeg" width="180"/> |
  
 ---
 ---
